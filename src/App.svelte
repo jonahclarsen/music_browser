@@ -18,6 +18,7 @@
   interface SavedSession {
     directory: string;
     includedFolders: string[];
+    visibleFolders?: string[];
     randomOrder: boolean;
     randomSongIds: string[];
     player: {
@@ -45,6 +46,7 @@
   let randomOrder = false;
   let randomSongIds: string[] = [];
   let analyzedFolders: string[] = [];
+  let visibleFolders = new Set<string>();
   let sessionReady = false;
   let saveTimer: number | undefined;
   let highlightTimer: number | undefined;
@@ -56,7 +58,8 @@
 
   $: filteredSongs = orderedSongs.filter((song) => {
     const query = search.trim().toLocaleLowerCase();
-    return !query || `${song.name} ${song.latest.filename} ${song.parentFolder}`.toLocaleLowerCase().includes(query);
+    return visibleFolders.has(song.parentFolder)
+      && (!query || `${song.name} ${song.latest.filename} ${song.parentFolder}`.toLocaleLowerCase().includes(query));
   });
 
   async function api<T>(url: string, options?: RequestInit): Promise<T> {
@@ -121,6 +124,7 @@
       randomOrder = false;
       randomSongIds = [];
       analyzedFolders = [...selected];
+      visibleFolders = new Set(analyzedFolders);
       settingsOpen = false;
       if (sessionReady) writeSession();
     } catch (cause) {
@@ -166,6 +170,14 @@
     writeSession();
   }
 
+  function toggleVisibleFolder(name: string): void {
+    const next = new Set(visibleFolders);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    visibleFolders = next;
+    writeSession();
+  }
+
   function showContext(event: MouseEvent, track: PlayerTrack, folderId?: string): void {
     menu = { x: event.clientX, y: event.clientY, track, folderId };
   }
@@ -192,6 +204,10 @@
     if (!song) return;
     settingsOpen = false;
     search = "";
+    if (!visibleFolders.has(song.parentFolder)) {
+      visibleFolders = new Set(visibleFolders).add(song.parentFolder);
+      writeSession();
+    }
     highlightedSongId = "";
     await tick();
     document.getElementById(`song-${song.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -206,6 +222,7 @@
     const saved: SavedSession = {
       directory: library.directory,
       includedFolders: analyzedFolders,
+      visibleFolders: [...visibleFolders],
       randomOrder,
       randomSongIds,
       player: {
@@ -244,6 +261,10 @@
       if (selected.size) await analyze();
 
       if (library) {
+        const availableFolders = new Set(analyzedFolders);
+        visibleFolders = Array.isArray(saved.visibleFolders)
+          ? new Set(saved.visibleFolders.filter((name) => availableFolders.has(name)))
+          : new Set(analyzedFolders);
         const validSongIds = new Set(library.songs.map(({ id }) => id));
         const restoredOrder = saved.randomSongIds.filter((id) => validSongIds.has(id));
         const restoredSet = new Set(restoredOrder);
@@ -378,6 +399,15 @@
           <input bind:value={search} placeholder="Filter songs, files, folders…" />
         </label>
         <div class="list-actions">
+          <div class="folder-filters" role="group" aria-label="Folders shown in song list">
+            {#each analyzedFolders as folder (folder)}
+              <label class:active={visibleFolders.has(folder)} class="folder-filter">
+                <input type="checkbox" checked={visibleFolders.has(folder)} on:change={() => toggleVisibleFolder(folder)} />
+                <span class="folder-filter-check">{visibleFolders.has(folder) ? "✓" : ""}</span>
+                <span class="folder-filter-name">{folder}</span>
+              </label>
+            {/each}
+          </div>
           <button class:active={randomOrder} class="random-order-button" type="button" aria-pressed={randomOrder} on:click={toggleRandomOrder}>
             <span>{randomOrder ? "✓" : ""}</span> RANDOM ORDER
           </button>
@@ -404,7 +434,11 @@
             />
           {/each}
         </div>
-        {#if !filteredSongs.length}<div class="empty-filter">No songs match “{search}”.</div>{/if}
+        {#if !filteredSongs.length}
+          <div class="empty-filter">
+            {search.trim() ? `No songs match “${search}”.` : "No songs match the selected folders."}
+          </div>
+        {/if}
       {:else}
         <div class="empty-library"><span>◌</span><h3>No versioned songs found</h3><p>Files need <code>v1.0</code>, <code>v2.3</code>, or another version number in their name.</p></div>
       {/if}

@@ -117,7 +117,14 @@ main { width: min(1720px, calc(100% - 44px)); height: calc(100% - 108px); margin
 .icon-search { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--dim); stroke-width: 1.5; stroke-linecap: round; }
 .search-box input { width: 100%; border: 0; background: none; padding: 10px 0; color: var(--ink); font-size: 14px; outline: 0; }
 .search-box input::placeholder { color: var(--placeholder); }
-.list-actions { display: flex; align-items: center; gap: 10px; }
+.list-actions { min-width: 0; display: flex; align-items: center; gap: 10px; }
+.folder-filters { min-width: 0; max-width: min(560px, 40vw); display: flex; align-items: center; gap: 7px; overflow-x: auto; padding: 4px 1px; scrollbar-width: thin; }
+.folder-filter { min-height: 31px; max-width: 180px; flex: 0 0 auto; display: flex; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-translucent); color: var(--dim); cursor: pointer; font: 500 10px var(--font-mono); letter-spacing: .04em; }
+.folder-filter:hover, .folder-filter:focus-within, .folder-filter.active { border-color: var(--accent); color: var(--accent); background: var(--panel-up); }
+.folder-filter input { position: absolute; opacity: 0; }
+.folder-filter-check { flex: 0 0 auto; display: grid; place-items: center; width: 15px; height: 15px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--accent-ink); font-size: 9px; }
+.folder-filter.active .folder-filter-check { border-color: var(--accent); background: var(--accent); }
+.folder-filter-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shuffle-button, .random-order-button { min-height: 39px; display: flex; gap: 10px; align-items: center; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); color: var(--ink); background: var(--panel-translucent); cursor: pointer; font: 500 10px var(--font-mono); letter-spacing: .09em; }
 .icon-shuffle { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .shuffle-button:hover, .random-order-button:hover, .random-order-button.active { border-color: var(--accent); color: var(--accent); background: var(--panel-up); }
@@ -261,7 +268,8 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
   .folder-grid { grid-template-columns: 1fr; }
   .list-tools { flex-basis: auto; align-items: stretch; gap: 8px; padding: 10px 0; flex-direction: column; }
   .search-box { width: 100%; }
-  .list-actions { width: 100%; }
+  .list-actions { width: 100%; flex-wrap: wrap; }
+  .folder-filters { flex: 1 0 100%; max-width: none; }
   .shuffle-button, .random-order-button { flex: 1; justify-content: center; padding-inline: 7px; }
   .song-summary { grid-template-columns: 1fr 42px; gap: 9px; padding: 8px 10px; }
   .song-summary .latest-file { grid-row: 2; grid-column: 1; }
