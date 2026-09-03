@@ -59,7 +59,7 @@
       aria-expanded={expanded}
       on:click={toggleExpanded}
     >
-      <span class="chevron" aria-hidden="true">⌄</span>
+      <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.25 6 7.75l3.5-3.5" /></svg>
     </button>
   </div>
 

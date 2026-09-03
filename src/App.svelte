@@ -320,7 +320,10 @@
       <span>MUSIC<br />BROWSER</span>
     </a>
     {#if library}
-      <button class="settings-button" type="button" on:click={() => (settingsOpen = true)}><span aria-hidden="true">⚙</span> SETTINGS</button>
+      <button class="settings-button" type="button" on:click={() => (settingsOpen = true)}>
+        <svg class="icon-gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.2h12.4M1.8 10.8h12.4" /><circle cx="5.6" cy="5.2" r="1.9" /><circle cx="10.4" cy="10.8" r="1.9" /></svg>
+        SETTINGS
+      </button>
     {/if}
   </header>
 
@@ -335,12 +338,18 @@
           <h2>{library.songs.length} {library.songs.length === 1 ? "song" : "songs"}</h2>
           {#if notice}<p>{notice}</p>{/if}
         </div>
-        <button class="shuffle-button" type="button" disabled={!library.songs.length} on:click={shuffle}><span>⌘</span> SHUFFLE ALL</button>
+        <button class="shuffle-button" type="button" disabled={!library.songs.length} on:click={shuffle}>
+          <svg class="icon-shuffle" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h2.7l7.6 9h2.7M1.5 12.5h2.7l7.6-9h2.7" /><path d="M12.3 1.6 14.5 3.5l-2.2 1.9M12.3 10.6l2.2 1.9-2.2 1.9" /></svg>
+          SHUFFLE ALL
+        </button>
       </div>
 
       {#if library.songs.length}
         <div class="list-tools">
-          <label class="search-box"><span>⌕</span><input bind:value={search} placeholder="Filter songs, files, folders…" /></label>
+          <label class="search-box">
+            <svg class="icon-search" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.9" cy="6.9" r="4.6" /><path d="m10.3 10.3 3.5 3.5" /></svg>
+            <input bind:value={search} placeholder="Filter songs, files, folders…" />
+          </label>
           <div class="list-actions">
             <button class:active={randomOrder} class="random-order-button" type="button" aria-pressed={randomOrder} on:click={toggleRandomOrder}>
               <span>{randomOrder ? "✓" : ""}</span> RANDOM ORDER
@@ -378,7 +387,7 @@
       </header>
       {@render directorySettings()}
       <section class="theme-panel" aria-labelledby="theme-title">
-        <div class="step-label" id="theme-title"><span>◐</span> APPEARANCE</div>
+        <div class="step-label" id="theme-title"><span>03</span> APPEARANCE</div>
         <div class="theme-grid" role="radiogroup" aria-label="Theme">
           {#each THEMES as option (option.id)}
             <button

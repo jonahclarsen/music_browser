@@ -176,11 +176,19 @@
 
   <div class="transport">
     <div class="transport-buttons">
-      <button type="button" disabled={$player.currentIndex <= 0} on:click={() => moveQueue(-1)} aria-label="Previous track">‹</button>
-      <button class="play-button" type="button" disabled={!$player.current} on:click={togglePlay} aria-label={$player.isPlaying ? "Pause" : "Play"}>
-        {$player.isPlaying ? "Ⅱ" : "▶"}
+      <button type="button" disabled={$player.currentIndex <= 0} on:click={() => moveQueue(-1)} aria-label="Previous track">
+        <svg class="icon-skip" viewBox="0 0 12 12" aria-hidden="true"><path d="M7.75 1.75 3.5 6l4.25 4.25" /></svg>
       </button>
-      <button type="button" disabled={$player.currentIndex < 0 || $player.currentIndex >= $player.queue.length - 1} on:click={() => moveQueue(1)} aria-label="Next track">›</button>
+      <button class="play-button" type="button" disabled={!$player.current} on:click={togglePlay} aria-label={$player.isPlaying ? "Pause" : "Play"}>
+        {#if $player.isPlaying}
+          <svg class="icon-pause" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="1.5" width="3" height="9" /><rect x="7" y="1.5" width="3" height="9" /></svg>
+        {:else}
+          <svg class="icon-play" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9L10.5 6z" /></svg>
+        {/if}
+      </button>
+      <button type="button" disabled={$player.currentIndex < 0 || $player.currentIndex >= $player.queue.length - 1} on:click={() => moveQueue(1)} aria-label="Next track">
+        <svg class="icon-skip" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.25 1.75 8.5 6l-4.25 4.25" /></svg>
+      </button>
     </div>
     <div class="timeline">
       <span>{formatTime(elapsed)}</span>
@@ -191,13 +199,15 @@
 
   <div class="player-tools">
     <button class="finder-button" type="button" disabled={!$player.current} on:click={revealSongFolder} title="Open song folder in Finder">
-      <span aria-hidden="true">▣</span> OPEN
+      <svg class="icon-folder" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.6 12.6V3.4h4.3l1.5 1.8h7v7.4z" /></svg>
+      OPEN
     </button>
-    <button class:active={$player.playlistVisible} type="button" disabled={!$player.queue.length} on:click={togglePlaylist} aria-label="Show play queue">
-      ≡ <span>{$player.queue.length || ""}</span>
+    <button class="queue-button" class:active={$player.playlistVisible} type="button" disabled={!$player.queue.length} on:click={togglePlaylist} aria-label="Show play queue">
+      <svg class="icon-queue" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 3.5h12M1 7h12M1 10.5h12" /></svg>
+      <span>{$player.queue.length || ""}</span>
     </button>
     <label class="volume-control">
-      <span aria-hidden="true">◖</span>
+      <svg class="icon-volume" viewBox="0 0 16 16" aria-hidden="true"><path class="speaker" d="M2 5.5h3L9 2.5v11L5 10.5H2z" /><path class="wave" d="M11.5 5.25a3.75 3.75 0 0 1 0 5.5" /></svg>
       <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={volume} on:input={changeVolume} />
     </label>
   </div>
