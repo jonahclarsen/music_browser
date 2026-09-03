@@ -6,6 +6,7 @@
   import SongCard from "./components/SongCard.svelte";
   import { makeTrack, player, playLater, playNext, playQueue, restorePlayer } from "./lib/player";
   import type { PlayerState } from "./lib/player";
+  import { THEMES, applyTheme, readSavedTheme, setTheme, theme } from "./lib/theme";
   import type { LibraryResult, ParentFolder, PlayerTrack, Song } from "./lib/types";
 
   interface MenuState {
@@ -257,11 +258,14 @@
   }
 
   onMount(() => {
+    theme.set(readSavedTheme());
+    const unsubscribeTheme = theme.subscribe(applyTheme);
     const unsubscribe = player.subscribe(scheduleSessionWrite);
     const persistNow = () => writeSession();
     window.addEventListener("pagehide", persistNow);
     void restoreSession();
     return () => {
+      unsubscribeTheme();
       unsubscribe();
       window.removeEventListener("pagehide", persistNow);
       if (saveTimer !== undefined) window.clearTimeout(saveTimer);
@@ -373,6 +377,25 @@
         <button type="button" aria-label="Close settings" on:click={() => (settingsOpen = false)}>×</button>
       </header>
       {@render directorySettings()}
+      <section class="theme-panel" aria-labelledby="theme-title">
+        <div class="step-label" id="theme-title"><span>◐</span> APPEARANCE</div>
+        <div class="theme-grid" role="radiogroup" aria-label="Theme">
+          {#each THEMES as option (option.id)}
+            <button
+              type="button"
+              role="radio"
+              class="theme-option"
+              class:selected={$theme === option.id}
+              aria-checked={$theme === option.id}
+              on:click={() => setTheme(option.id)}
+            >
+              <span class="theme-swatch" data-theme={option.id} aria-hidden="true"><b>Aa</b><i></i><i></i></span>
+              <strong>{option.name}{#if $theme === option.id}<span class="theme-check" aria-hidden="true">●</span>{/if}</strong>
+              <small>{option.tagline}</small>
+            </button>
+          {/each}
+        </div>
+      </section>
     </div>
   </div>
 {/if}
