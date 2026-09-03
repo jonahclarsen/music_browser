@@ -46,4 +46,19 @@ describe("library scanner", () => {
       "Glass Houses v1.9.mp3",
     ]);
   });
+
+  it("orders songs by their latest export modification time", async () => {
+    const root = await fixture();
+    const current = path.join(root, "Current");
+    const glassExport = path.join(current, "Glass Houses Project", "Exports", "Glass Houses v1.0.mp3");
+    const signalExport = path.join(current, "Signal Bloom Project", "Signal Bloom v1.0.mp3");
+    await mkdir(path.dirname(signalExport), { recursive: true });
+    await writeFile(glassExport, "audio");
+    await writeFile(signalExport, "audio");
+    await utimes(glassExport, new Date(1_000), new Date(1_000));
+    await utimes(signalExport, new Date(2_000), new Date(2_000));
+
+    const result = await scanLibrary(root, ["Current"]);
+    expect(result.songs.map(({ name }) => name)).toEqual(["Signal Bloom", "Glass Houses"]);
+  });
 });

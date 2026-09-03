@@ -128,7 +128,10 @@ export async function scanLibrary(directory: string, includedFolders: string[]):
     }
   }
 
-  songs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+  songs.sort(
+    (a, b) =>
+      b.latest.modifiedAt - a.latest.modifiedAt ||
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }),
+  );
   return { directory: root, songs, scannedProjectCount };
 }
-

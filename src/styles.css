@@ -36,8 +36,9 @@ main { width: min(1480px, calc(100% - 72px)); margin: 0 auto; padding-bottom: 15
 .brand-disc::before, .brand-disc::after { content: ""; position: absolute; border: 1px solid #73726d; border-radius: 50%; inset: 6px; }
 .brand-disc::after { inset: 11px; }
 .brand-disc i { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); z-index: 1; }
-.local-label { font: 400 10px "JetBrains Mono", monospace; letter-spacing: .14em; color: var(--muted); }
-.local-label i { display: inline-block; width: 7px; height: 7px; margin-right: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+.settings-button { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid #45443f; background: none; color: #aaa8a1; cursor: pointer; font: 400 9px "JetBrains Mono", monospace; letter-spacing: .12em; }
+.settings-button span { color: var(--accent); font-size: 13px; }
+.settings-button:hover { color: var(--accent); border-color: var(--accent); }
 
 .hero { padding: 64px 2vw 72px; }
 .eyebrow { margin: 0 0 20px; color: var(--accent); font: 400 10px "JetBrains Mono", monospace; letter-spacing: .19em; }
@@ -93,6 +94,12 @@ main { width: min(1480px, calc(100% - 72px)); margin: 0 auto; padding-bottom: 15
 .search-box span { font-size: 19px; color: #7c7b75; }
 .search-box input { width: 100%; border: 0; background: none; padding: 9px 0; color: var(--ink); font-size: 12px; outline: 0; }
 .search-box input::placeholder { color: #5c5b56; }
+.list-actions { display: flex; align-items: center; gap: 22px; }
+.random-order-button { display: flex; align-items: center; gap: 8px; border: 0; background: none; color: #77766f; cursor: pointer; font: inherit; letter-spacing: inherit; }
+.random-order-button > span { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid #5b5a54; color: #10100f; font-size: 9px; }
+.random-order-button:hover { color: var(--ink); }
+.random-order-button.active { color: var(--accent); }
+.random-order-button.active > span { border-color: var(--accent); background: var(--accent); }
 .column-head, .song-summary { display: grid; grid-template-columns: minmax(170px, 1.15fr) minmax(230px, 1.5fr) 125px minmax(150px, .85fr) 24px; gap: 22px; align-items: center; }
 .column-head { height: 40px; padding: 0 17px; color: #66655f; font: 400 9px "JetBrains Mono", monospace; letter-spacing: .14em; }
 .song-list { border-top: 1px solid var(--line); }
@@ -129,6 +136,16 @@ main { width: min(1480px, calc(100% - 72px)); margin: 0 auto; padding-bottom: 15
 .context-menu button { width: 100%; padding: 9px 10px; border: 0; background: transparent; text-align: left; color: #d0ccc4; font-size: 12px; cursor: pointer; }
 .context-menu button:hover { background: var(--accent); color: #111; }
 
+.settings-shell { position: fixed; z-index: 70; inset: 0; display: grid; place-items: center; padding: 24px; }
+.settings-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(5,5,5,.76); backdrop-filter: blur(5px); cursor: default; }
+.settings-modal { position: relative; width: min(680px, 100%); max-height: min(800px, calc(100vh - 48px)); overflow: auto; border: 1px solid #4a4943; background: #181817; box-shadow: 0 35px 110px #000d; }
+.settings-modal > header { display: flex; justify-content: space-between; align-items: center; padding: 23px 26px; }
+.settings-modal > header span { color: var(--accent); font: 400 8px "JetBrains Mono", monospace; letter-spacing: .16em; }
+.settings-modal > header h2 { margin: 3px 0 0; font-size: 27px; font-weight: 520; letter-spacing: -.03em; }
+.settings-modal > header button { border: 0; background: none; color: #8d8c86; font-size: 28px; cursor: pointer; }
+.settings-modal > header button:hover { color: var(--ink); }
+.settings-modal .setup-panel { border: 0; border-top: 1px solid var(--line); box-shadow: none; }
+
 .player-dock { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; height: 93px; display: grid; grid-template-columns: minmax(250px, 1fr) minmax(390px, 1.25fr) minmax(250px, 1fr); align-items: center; border-top: 1px solid #41403b; background: rgba(19,19,18,.96); box-shadow: 0 -20px 60px rgba(0,0,0,.26); backdrop-filter: blur(18px); }
 .player-dock.empty { opacity: .75; }
 .now-playing { min-width: 0; padding-left: max(25px, calc((100vw - 1480px) / 2)); display: flex; align-items: center; gap: 15px; }
@@ -158,9 +175,10 @@ input[type="range"] { height: 2px; accent-color: var(--accent); cursor: pointer;
 .player-tools > button.active, .player-tools > button:hover { color: var(--accent); }
 .player-tools > button:disabled { opacity: .3; cursor: default; }
 .player-tools > button span { font: 400 8px "JetBrains Mono", monospace; }
+.player-tools .finder-button { display: flex; align-items: center; gap: 7px; font: 400 8px "JetBrains Mono", monospace; letter-spacing: .1em; }
+.player-tools .finder-button > span { color: var(--accent); font-size: 11px; }
 .volume-control { display: flex; align-items: center; gap: 8px; color: #85847e; }
 .volume-control input { width: 72px; }
-.normalized { padding: 4px 5px; border: 1px solid #46502d; color: var(--accent); font: 400 7px "JetBrains Mono", monospace; letter-spacing: .1em; }
 
 .queue-panel { position: fixed; z-index: 39; right: 25px; bottom: 92px; width: min(430px, calc(100vw - 50px)); max-height: min(510px, calc(100vh - 150px)); display: flex; flex-direction: column; border: 1px solid #46453f; background: #1b1b19; box-shadow: 0 -10px 50px #000a; }
 .queue-head { display: flex; justify-content: space-between; align-items: center; padding: 15px 17px; border-bottom: 1px solid var(--line); }
@@ -185,6 +203,7 @@ input[type="range"] { height: 2px; accent-color: var(--accent); cursor: pointer;
   main { width: min(100% - 36px, 760px); }
   .hero { padding: 50px 0 58px; }
   .library-section { padding-left: 0; padding-right: 0; }
+  .list-actions { gap: 12px; }
   .column-head { display: none; }
   .song-summary { grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.3fr) 85px 24px; }
   .song-summary .parent { display: none; }
@@ -202,6 +221,9 @@ input[type="range"] { height: 2px; accent-color: var(--accent); cursor: pointer;
   .folder-grid { grid-template-columns: 1fr; }
   .library-heading { align-items: start; gap: 25px; }
   .shuffle-button { padding: 11px; white-space: nowrap; }
+  .list-actions > div { display: none; }
+  .random-order-button { white-space: nowrap; }
+  .settings-shell { padding: 12px; }
   .song-summary { grid-template-columns: 1fr 64px 20px; gap: 10px; padding: 8px 11px; }
   .song-summary .latest-file { grid-row: 2; grid-column: 1 / 3; }
   .song-summary .parent { display: none; }

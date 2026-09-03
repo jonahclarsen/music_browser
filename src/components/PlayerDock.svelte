@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { moveQueue, player, removeQueueItem, selectQueueIndex, setPlaying, togglePlaylist } from "../lib/player";
+  import { moveQueue, player, removeQueueItem, selectQueueIndex, setPlaying, setPosition, togglePlaylist } from "../lib/player";
 
   let audio: HTMLAudioElement;
   let audioContext: AudioContext | null = null;
@@ -9,6 +9,7 @@
   let volume = 0.72;
   let elapsed = 0;
   let duration = 0;
+  let pendingPosition = 0;
 
   function formatTime(seconds: number): string {
     if (!Number.isFinite(seconds)) return "0:00";
@@ -39,7 +40,7 @@
   async function ensurePlaying(): Promise<void> {
     setupAudioGraph();
     await audioContext?.resume();
-    await audio.play().catch(() => setPlaying(false));
+    await audio.play().catch(() => {});
   }
 
   function togglePlay(): void {
@@ -58,19 +59,47 @@
     if (volumeGain) volumeGain.gain.value = volume;
   }
 
+  async function revealSongFolder(): Promise<void> {
+    if (!$player.current) return;
+    await fetch("/api/reveal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: $player.current.folderId, kind: "folder" }),
+    });
+  }
+
+  function syncTime(): void {
+    elapsed = audio.currentTime;
+    if (loadedId === $player.current?.id) setPosition(elapsed);
+  }
+
+  function restorePosition(): void {
+    duration = audio.duration;
+    if (pendingPosition > 0 && Number.isFinite(audio.duration)) {
+      audio.currentTime = Math.min(pendingPosition, Math.max(0, audio.duration - 0.05));
+      elapsed = audio.currentTime;
+      pendingPosition = 0;
+    }
+  }
+
   $: if (audio && $player.current && $player.current.id !== loadedId) {
+    const shouldPlay = $player.isPlaying;
     loadedId = $player.current.id;
+    pendingPosition = $player.position;
     audio.src = `/api/audio/${encodeURIComponent(loadedId)}`;
     audio.load();
     elapsed = 0;
     duration = 0;
-    if ($player.isPlaying) void ensurePlaying();
+    if (shouldPlay) void ensurePlaying();
   }
 
   $: if (audio && loadedId && $player.isPlaying && audio.paused) void ensurePlaying();
 
   onMount(() => {
-    const resume = () => void audioContext?.resume();
+    const resume = () => {
+      if ($player.isPlaying && audio.paused) void ensurePlaying();
+      else void audioContext?.resume();
+    };
     window.addEventListener("pointerdown", resume);
     return () => {
       window.removeEventListener("pointerdown", resume);
@@ -109,16 +138,19 @@
     on:play={() => setPlaying(true)}
     on:pause={() => setPlaying(false)}
     on:ended={() => moveQueue(1)}
-    on:timeupdate={() => (elapsed = audio.currentTime)}
+    on:timeupdate={syncTime}
+    on:loadedmetadata={restorePosition}
     on:durationchange={() => (duration = audio.duration)}
   ></audio>
 
   <div class="now-playing">
-    <div class="album-mark" class:active={$player.isPlaying} aria-hidden="true"><i></i><i></i><i></i></div>
-    <div>
-      <strong>{$player.current?.songName ?? "Nothing playing"}</strong>
-      <span>{$player.current?.filename ?? "Choose a song to begin"}</span>
-    </div>
+    {#if $player.current}
+      <div class="album-mark" class:active={$player.isPlaying} aria-hidden="true"><i></i><i></i><i></i></div>
+      <div>
+        <strong>{$player.current.songName}</strong>
+        <span>{$player.current.filename}</span>
+      </div>
+    {/if}
   </div>
 
   <div class="transport">
@@ -137,6 +169,9 @@
   </div>
 
   <div class="player-tools">
+    <button class="finder-button" type="button" disabled={!$player.current} on:click={revealSongFolder} title="Open song folder in Finder">
+      <span aria-hidden="true">▣</span> OPEN
+    </button>
     <button class:active={$player.playlistVisible} type="button" disabled={!$player.queue.length} on:click={togglePlaylist} aria-label="Show play queue">
       ≡ <span>{$player.queue.length || ""}</span>
     </button>
@@ -144,7 +179,5 @@
       <span aria-hidden="true">◖</span>
       <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={volume} on:input={changeVolume} />
     </label>
-    <span class="normalized" title="Fast adaptive loudness normalization is active">NORM</span>
   </div>
 </footer>
-

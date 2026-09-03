@@ -30,5 +30,5 @@ export interface LibraryResult {
 export interface PlayerTrack extends SongVersion {
   songName: string;
   parentFolder: string;
+  folderId: string;
 }
-

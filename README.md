@@ -37,6 +37,8 @@ Each direct child of a selected collection is treated as one song project. Audio
 
 Versions are ordered by version number. Files with the same version are ordered by modification date. The song title comes from its project folder, with a trailing ` Project` removed.
 
+Songs are listed by the modification time of their latest export, newest first. **Random Order** temporarily gives the visible list a random order and restores newest-first order when switched off.
+
 ## Playback
 
 - Click summary text to play the latest version.
@@ -44,6 +46,7 @@ Versions are ordered by version number. Files with the same version are ordered 
 - Right-click a card or version for Finder and queue actions.
 - **Shuffle All** uses an unbiased Fisher–Yates shuffle backed by `crypto.getRandomValues`, with one entry per song.
 - Playback passes through a lightweight Web Audio gain and dynamics chain. It lifts quiet demos and constrains mastered tracks in real time, avoiding slow preprocessing and duplicate normalized files.
+- The selected library is rescanned at launch. List order, queue order, current track, playback position, and playing/paused state are restored from local storage after that scan.
 
 ## Development
 

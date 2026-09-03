@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import ContextMenu from "./components/ContextMenu.svelte";
   import PlayerDock from "./components/PlayerDock.svelte";
   import SongCard from "./components/SongCard.svelte";
-  import { makeTrack, playLater, playNext, playNow, playQueue } from "./lib/player";
+  import { makeTrack, player, playLater, playNext, playNow, playQueue, restorePlayer } from "./lib/player";
+  import type { PlayerState } from "./lib/player";
   import type { LibraryResult, ParentFolder, PlayerTrack, Song } from "./lib/types";
 
   interface MenuState {
@@ -12,6 +14,22 @@
     track: PlayerTrack;
     folderId?: string;
   }
+
+  interface SavedSession {
+    directory: string;
+    includedFolders: string[];
+    randomOrder: boolean;
+    randomSongIds: string[];
+    player: {
+      queueIds: string[];
+      currentIndex: number;
+      isPlaying: boolean;
+      playlistVisible: boolean;
+      position: number;
+    };
+  }
+
+  const SESSION_KEY = "music-browser-session-v1";
 
   let directory = "";
   let folders: ParentFolder[] = [];
@@ -24,8 +42,18 @@
   let notice = "";
   let search = "";
   let menu: MenuState | null = null;
+  let settingsOpen = false;
+  let randomOrder = false;
+  let randomSongIds: string[] = [];
+  let analyzedFolders: string[] = [];
+  let sessionReady = false;
+  let saveTimer: number | undefined;
 
-  $: filteredSongs = (library?.songs ?? []).filter((song) => {
+  $: orderedSongs = randomOrder && library
+    ? randomSongIds.map((id) => library!.songs.find((song) => song.id === id)).filter((song): song is Song => Boolean(song))
+    : library?.songs ?? [];
+
+  $: filteredSongs = orderedSongs.filter((song) => {
     const query = search.trim().toLocaleLowerCase();
     return !query || `${song.name} ${song.latest.filename} ${song.parentFolder}`.toLocaleLowerCase().includes(query);
   });
@@ -51,16 +79,17 @@
     }
   }
 
-  async function loadFolders(): Promise<void> {
+  async function loadFolders(preferredFolders?: string[] | Event): Promise<void> {
     if (!directory.trim()) return;
     loadingFolders = true;
     error = "";
-    library = null;
     try {
       const result = await api<{ directory: string; folders: ParentFolder[] }>(`/api/folders?directory=${encodeURIComponent(directory.trim())}`);
       directory = result.directory;
       folders = result.folders;
-      selected = new Set(result.folders.map(({ name }) => name));
+      const available = new Set(result.folders.map(({ name }) => name));
+      const preferred = Array.isArray(preferredFolders) ? preferredFolders.filter((name) => available.has(name)) : null;
+      selected = new Set(preferred ?? result.folders.map(({ name }) => name));
       localStorage.setItem("music-browser-directory", directory);
     } catch (cause) {
       error = cause instanceof Error ? cause.message : "Could not read that directory.";
@@ -92,6 +121,11 @@
       notice = library.songs.length
         ? `Found ${library.songs.length} ${library.songs.length === 1 ? "song" : "songs"} across ${library.scannedProjectCount} project folders.`
         : `No versioned MP3 or WAV files were found in ${library.scannedProjectCount} project folders.`;
+      randomOrder = false;
+      randomSongIds = [];
+      analyzedFolders = [...selected];
+      settingsOpen = false;
+      if (sessionReady) writeSession();
     } catch (cause) {
       error = cause instanceof Error ? cause.message : "Could not analyze the selected folders.";
     } finally {
@@ -106,14 +140,23 @@
     return value[0] % size;
   }
 
+  function shuffleInPlace<T>(items: T[]): T[] {
+    for (let index = items.length - 1; index > 0; index -= 1) {
+      const other = secureRandomIndex(index + 1);
+      [items[index], items[other]] = [items[other], items[index]];
+    }
+    return items;
+  }
+
   function shuffle(): void {
     if (!library?.songs.length) return;
-    const queue = library.songs.map((song) => makeTrack(song));
-    for (let index = queue.length - 1; index > 0; index -= 1) {
-      const other = secureRandomIndex(index + 1);
-      [queue[index], queue[other]] = [queue[other], queue[index]];
-    }
-    playQueue(queue);
+    playQueue(shuffleInPlace(library.songs.map((song) => makeTrack(song))));
+  }
+
+  function toggleRandomOrder(): void {
+    randomOrder = !randomOrder;
+    randomSongIds = randomOrder && library ? shuffleInPlace(library.songs.map(({ id }) => id)) : [];
+    writeSession();
   }
 
   function showContext(event: MouseEvent, track: PlayerTrack, folderId?: string): void {
@@ -127,12 +170,138 @@
     }, 5000);
   }
 
+  function handleWindowKeydown(event: KeyboardEvent): void {
+    if (settingsOpen && event.key === "Escape") settingsOpen = false;
+  }
+
+  function writeSession(): void {
+    if (!sessionReady || !library) return;
+    const state = get(player);
+    const saved: SavedSession = {
+      directory: library.directory,
+      includedFolders: analyzedFolders,
+      randomOrder,
+      randomSongIds,
+      player: {
+        queueIds: state.queue.map(({ id }) => id),
+        currentIndex: state.currentIndex,
+        isPlaying: state.isPlaying,
+        playlistVisible: state.playlistVisible,
+        position: state.position,
+      },
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(saved));
+  }
+
+  function scheduleSessionWrite(_state: PlayerState): void {
+    if (!sessionReady || saveTimer !== undefined) return;
+    saveTimer = window.setTimeout(() => {
+      saveTimer = undefined;
+      writeSession();
+    }, 750);
+  }
+
+  function readSavedSession(): SavedSession | null {
+    try {
+      const value = localStorage.getItem(SESSION_KEY);
+      return value ? (JSON.parse(value) as SavedSession) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function restoreSession(): Promise<void> {
+    const saved = readSavedSession();
+    directory = saved?.directory ?? localStorage.getItem("music-browser-directory") ?? "";
+    if (saved && directory) {
+      await loadFolders(saved.includedFolders);
+      if (selected.size) await analyze();
+
+      if (library) {
+        const validSongIds = new Set(library.songs.map(({ id }) => id));
+        const restoredOrder = saved.randomSongIds.filter((id) => validSongIds.has(id));
+        const restoredSet = new Set(restoredOrder);
+        restoredOrder.push(...library.songs.map(({ id }) => id).filter((id) => !restoredSet.has(id)));
+        randomOrder = saved.randomOrder;
+        randomSongIds = saved.randomOrder ? restoredOrder : [];
+
+        const tracks = new Map<string, PlayerTrack>();
+        for (const song of library.songs) {
+          for (const version of song.versions) tracks.set(version.id, makeTrack(song, version));
+        }
+        const queue: PlayerTrack[] = [];
+        let currentIndex = -1;
+        saved.player.queueIds.forEach((id, index) => {
+          const track = tracks.get(id);
+          if (!track) return;
+          queue.push(track);
+          if (index === saved.player.currentIndex) currentIndex = queue.length - 1;
+        });
+        restorePlayer(
+          queue,
+          currentIndex < 0 ? Math.min(saved.player.currentIndex, queue.length - 1) : currentIndex,
+          saved.player.isPlaying,
+          saved.player.playlistVisible,
+          saved.player.position,
+        );
+      }
+    }
+    sessionReady = true;
+    writeSession();
+  }
+
   onMount(() => {
-    directory = localStorage.getItem("music-browser-directory") ?? "";
+    const unsubscribe = player.subscribe(scheduleSessionWrite);
+    const persistNow = () => writeSession();
+    window.addEventListener("pagehide", persistNow);
+    void restoreSession();
+    return () => {
+      unsubscribe();
+      window.removeEventListener("pagehide", persistNow);
+      if (saveTimer !== undefined) window.clearTimeout(saveTimer);
+    };
   });
 </script>
 
 <svelte:head><title>{library ? `${library.songs.length} songs · Music Browser` : "Music Browser"}</title></svelte:head>
+<svelte:window on:keydown={handleWindowKeydown} />
+
+{#snippet directorySettings()}
+  <div class="setup-panel">
+    <div class="step-label"><span>01</span> CHOOSE A DIRECTORY</div>
+    <div class="directory-row">
+      <label>
+        <span class="sr-only">Music directory</span>
+        <input bind:value={directory} on:keydown={(event) => event.key === "Enter" && loadFolders()} placeholder="/Users/you/Music/Projects" spellcheck="false" />
+      </label>
+      <button class="browse-button" type="button" disabled={pickerOpen} on:click={chooseDirectory}>{pickerOpen ? "OPENING…" : "BROWSE"}</button>
+      <button class="load-button" type="button" disabled={!directory.trim() || loadingFolders} on:click={loadFolders} aria-label="Load folders">→</button>
+    </div>
+
+    {#if loadingFolders}
+      <div class="loading-line"><i></i> Reading folders…</div>
+    {:else if folders.length}
+      <div class="folder-picker">
+        <div class="folder-head">
+          <div class="step-label"><span>02</span> INCLUDE IN ANALYSIS</div>
+          <div><button type="button" on:click={() => (selected = new Set(folders.map(({ name }) => name)))}>ALL</button><button type="button" on:click={() => (selected = new Set())}>NONE</button></div>
+        </div>
+        <div class="folder-grid">
+          {#each folders as folder (folder.name)}
+            <label class="folder-check">
+              <input type="checkbox" checked={selected.has(folder.name)} on:change={() => toggleFolder(folder.name)} />
+              <span class="box">✓</span><span>{folder.name}</span>
+            </label>
+          {/each}
+        </div>
+        <button class="analyze-button" type="button" disabled={!selected.size || scanning} on:click={analyze}>
+          {scanning ? "ANALYZING…" : `ANALYZE ${selected.size} ${selected.size === 1 ? "FOLDER" : "FOLDERS"}`}
+          <span>↗</span>
+        </button>
+      </div>
+    {/if}
+  </div>
+{/snippet}
 
 <main>
   <header class="site-header">
@@ -140,45 +309,12 @@
       <span class="brand-disc"><i></i></span>
       <span>MUSIC<br />BROWSER</span>
     </a>
-    <div class="local-label"><i></i> LOCAL LIBRARY</div>
+    {#if library}
+      <button class="settings-button" type="button" on:click={() => (settingsOpen = true)}><span aria-hidden="true">⚙</span> SETTINGS</button>
+    {/if}
   </header>
 
-  <section class="hero">
-    <div class="setup-panel">
-      <div class="step-label"><span>01</span> CHOOSE A DIRECTORY</div>
-      <div class="directory-row">
-        <label>
-          <span class="sr-only">Music directory</span>
-          <input bind:value={directory} on:keydown={(event) => event.key === "Enter" && loadFolders()} placeholder="/Users/you/Music/Projects" spellcheck="false" />
-        </label>
-        <button class="browse-button" type="button" disabled={pickerOpen} on:click={chooseDirectory}>{pickerOpen ? "OPENING…" : "BROWSE"}</button>
-        <button class="load-button" type="button" disabled={!directory.trim() || loadingFolders} on:click={loadFolders} aria-label="Load folders">→</button>
-      </div>
-
-      {#if loadingFolders}
-        <div class="loading-line"><i></i> Reading folders…</div>
-      {:else if folders.length}
-        <div class="folder-picker">
-          <div class="folder-head">
-            <div class="step-label"><span>02</span> INCLUDE IN ANALYSIS</div>
-            <div><button type="button" on:click={() => (selected = new Set(folders.map(({ name }) => name)))}>ALL</button><button type="button" on:click={() => (selected = new Set())}>NONE</button></div>
-          </div>
-          <div class="folder-grid">
-            {#each folders as folder (folder.name)}
-              <label class="folder-check">
-                <input type="checkbox" checked={selected.has(folder.name)} on:change={() => toggleFolder(folder.name)} />
-                <span class="box">✓</span><span>{folder.name}</span>
-              </label>
-            {/each}
-          </div>
-          <button class="analyze-button" type="button" disabled={!selected.size || scanning} on:click={analyze}>
-            {scanning ? "ANALYZING…" : `ANALYZE ${selected.size} ${selected.size === 1 ? "FOLDER" : "FOLDERS"}`}
-            <span>↗</span>
-          </button>
-        </div>
-      {/if}
-    </div>
-  </section>
+  {#if !library}<section class="hero">{@render directorySettings()}</section>{/if}
 
   {#if error}<div class="message error-message" role="alert"><span>!</span>{error}<button type="button" on:click={() => (error = "")}>×</button></div>{/if}
 
@@ -196,7 +332,12 @@
       {#if library.songs.length}
         <div class="list-tools">
           <label class="search-box"><span>⌕</span><input bind:value={search} placeholder="Filter songs, files, folders…" /></label>
-          <div>{filteredSongs.length} SHOWN</div>
+          <div class="list-actions">
+            <button class:active={randomOrder} class="random-order-button" type="button" aria-pressed={randomOrder} on:click={toggleRandomOrder}>
+              <span>{randomOrder ? "✓" : ""}</span> RANDOM ORDER
+            </button>
+            <div>{filteredSongs.length} SHOWN</div>
+          </div>
         </div>
         <div class="column-head"><span>SONG</span><span>LATEST VERSION</span><span>HISTORY</span><span>COLLECTION</span><span></span></div>
         <div class="song-list">
@@ -211,6 +352,19 @@
     </section>
   {/if}
 </main>
+
+{#if settingsOpen}
+  <div class="settings-shell">
+    <button class="settings-backdrop" type="button" aria-label="Close settings" on:click={() => (settingsOpen = false)}></button>
+    <div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" tabindex="-1">
+      <header>
+        <div><span>LIBRARY</span><h2 id="settings-title">Settings</h2></div>
+        <button type="button" aria-label="Close settings" on:click={() => (settingsOpen = false)}>×</button>
+      </header>
+      {@render directorySettings()}
+    </div>
+  </div>
+{/if}
 
 {#if menu}
   <ContextMenu
