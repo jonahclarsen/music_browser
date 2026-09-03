@@ -46,7 +46,7 @@ Songs are listed by the modification time of their newest export, newest first. 
 - Click the card's wide arrow control to expand its version history.
 - The current song is marked in the list; its indicator animates while playback is active.
 - Right-click a card, version, or the current track in the player for Finder and queue actions.
-- **Shuffle All** uses an unbiased Fisher–Yates shuffle backed by `crypto.getRandomValues`, with one entry per song.
+- **Shuffle All** enables **Random Order**, or reshuffles it when already enabled, then plays from the first song in that order. It uses an unbiased Fisher–Yates shuffle backed by `crypto.getRandomValues`, with one entry per song.
 - Playback passes through a lightweight Web Audio gain and dynamics chain. It lifts quiet demos and constrains mastered tracks in real time, avoiding slow preprocessing and duplicate normalized files.
 - Returning to a track within ten seconds resumes the position where it was left.
 - Click the current song or filename in the bottom player to center and briefly highlight its list row.

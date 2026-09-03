@@ -147,7 +147,11 @@
 
   function shuffle(): void {
     if (!library?.songs.length) return;
-    playQueue(shuffleInPlace(library.songs.map((song) => makeTrack(song))));
+    const shuffledSongs = shuffleInPlace([...library.songs]);
+    randomOrder = true;
+    randomSongIds = shuffledSongs.map(({ id }) => id);
+    playQueue(shuffledSongs.map((song) => makeTrack(song)));
+    writeSession();
   }
 
   function playFromList(track: PlayerTrack): void {
