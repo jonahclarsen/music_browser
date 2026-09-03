@@ -200,6 +200,7 @@
         <span>{$player.current.filename}</span>
         <time datetime={new Date($player.current.songDate).toISOString()}>{formatDate($player.current.songDate)}</time>
       </button>
+      <button class="finder-button" type="button" on:click={revealSongFolder} title="Open song folder in Finder"><svg class="icon-folder" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.8 14.2V4h5l1.7 2h7.7v8.2z" /></svg><span>OPEN IN FINDER</span></button>
     {/if}
   </div>
 
@@ -210,7 +211,6 @@
         {#if $player.isPlaying}<svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="4" height="12" rx=".7" /><rect x="9" y="2" width="4" height="12" rx=".7" /></svg>{:else}<svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6L14 8z" /></svg>{/if}
       </button>
       <button type="button" disabled={$player.currentIndex < 0 || $player.currentIndex >= $player.queue.length - 1} on:click={() => moveQueue(1)} aria-label="Next track"><svg class="icon-skip" viewBox="0 0 16 16" aria-hidden="true"><path d="M11 2.5v11M3 3l5.5 5L3 13" /></svg></button>
-      <button class="finder-button" type="button" disabled={!$player.current} on:click={revealSongFolder} title="Open song folder in Finder"><svg class="icon-folder" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.8 14.2V4h5l1.7 2h7.7v8.2z" /></svg><span>OPEN IN FINDER</span></button>
     </div>
     <div class="timeline"><span>{formatTime(elapsed)}</span><input aria-label="Seek" type="range" min="0" max={duration || 0} step="0.1" value={elapsed} on:input={seek} /><span>{formatTime(duration)}</span></div>
   </div>
