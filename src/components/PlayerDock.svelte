@@ -210,12 +210,12 @@
         {#if $player.isPlaying}<svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="4" height="12" rx=".7" /><rect x="9" y="2" width="4" height="12" rx=".7" /></svg>{:else}<svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6L14 8z" /></svg>{/if}
       </button>
       <button type="button" disabled={$player.currentIndex < 0 || $player.currentIndex >= $player.queue.length - 1} on:click={() => moveQueue(1)} aria-label="Next track"><svg class="icon-skip" viewBox="0 0 16 16" aria-hidden="true"><path d="M11 2.5v11M3 3l5.5 5L3 13" /></svg></button>
+      <button class="finder-button" type="button" disabled={!$player.current} on:click={revealSongFolder} title="Open song folder in Finder"><svg class="icon-folder" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.8 14.2V4h5l1.7 2h7.7v8.2z" /></svg><span>OPEN IN FINDER</span></button>
     </div>
     <div class="timeline"><span>{formatTime(elapsed)}</span><input aria-label="Seek" type="range" min="0" max={duration || 0} step="0.1" value={elapsed} on:input={seek} /><span>{formatTime(duration)}</span></div>
   </div>
 
   <div class="player-tools">
-    <button class="finder-button" type="button" disabled={!$player.current} on:click={revealSongFolder} title="Open song folder in Finder"><svg class="icon-folder" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.8 14.2V4h5l1.7 2h7.7v8.2z" /></svg><span>OPEN IN FINDER</span></button>
     <button class="queue-button" class:active={$player.playlistVisible} type="button" disabled={!$player.queue.length} on:click={togglePlaylist} aria-label="Show play queue"><svg class="icon-queue" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h13M1.5 8h13M1.5 12h13" /></svg><span>{$player.queue.length || ""}</span></button>
     <label class="volume-control"><svg class="icon-volume" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 8h3.2L10 4.5v11l-4.3-3.5H2.5z" /><path d="M13 7a4 4 0 0 1 0 6M15.6 4.7a7.1 7.1 0 0 1 0 10.6" /></svg><input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={volume} on:input={changeVolume} /></label>
   </div>
