@@ -13,6 +13,7 @@
     y: number;
     track: PlayerTrack;
     folderId?: string;
+    showQueueActions: boolean;
   }
 
   interface SavedSession {
@@ -178,8 +179,8 @@
     writeSession();
   }
 
-  function showContext(event: MouseEvent, track: PlayerTrack, folderId?: string): void {
-    menu = { x: event.clientX, y: event.clientY, track, folderId };
+  function showContext(event: MouseEvent, track: PlayerTrack, folderId?: string, showQueueActions = true): void {
+    menu = { x: event.clientX, y: event.clientY, track, folderId, showQueueActions };
   }
 
   function flashError(message: string): void {
@@ -452,6 +453,7 @@
     y={menu.y}
     track={menu.track}
     folderId={menu.folderId}
+    showQueueActions={menu.showQueueActions}
     onclose={() => (menu = null)}
     onnext={playNext}
     onlater={playLater}
@@ -459,4 +461,7 @@
   />
 {/if}
 
-<PlayerDock onlocate={locateSong} oncontext={showContext} />
+<PlayerDock
+  onlocate={locateSong}
+  oncontext={(event, track, folderId) => showContext(event, track, folderId, false)}
+/>

@@ -5,13 +5,14 @@
   export let y: number;
   export let track: PlayerTrack;
   export let folderId: string | undefined = undefined;
+  export let showQueueActions = true;
   export let onclose: () => void;
   export let onnext: (track: PlayerTrack) => void;
   export let onlater: (track: PlayerTrack) => void;
   export let onerror: (message: string) => void;
 
   $: left = Math.min(x, window.innerWidth - 214);
-  $: top = Math.min(y, window.innerHeight - 168);
+  $: top = Math.min(y, window.innerHeight - (showQueueActions ? 116 : 52));
 
   async function reveal(): Promise<void> {
     const response = await fetch("/api/reveal", {
@@ -30,8 +31,9 @@
 <svelte:window on:click={onclose} on:blur={onclose} on:keydown={(event) => event.key === "Escape" && onclose()} />
 
 <div class="context-menu" role="menu" tabindex="-1" style:left="{left}px" style:top="{top}px">
-  <div class="context-title">{track.songName}</div>
   <button type="button" role="menuitem" on:click={reveal}>Open in Finder</button>
-  <button type="button" role="menuitem" on:click={() => (onnext(track), onclose())}>Play Next</button>
-  <button type="button" role="menuitem" on:click={() => (onlater(track), onclose())}>Play Later</button>
+  {#if showQueueActions}
+    <button type="button" role="menuitem" on:click={() => (onnext(track), onclose())}>Play Next</button>
+    <button type="button" role="menuitem" on:click={() => (onlater(track), onclose())}>Play Later</button>
+  {/if}
 </div>
