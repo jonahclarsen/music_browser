@@ -4,7 +4,7 @@
   import ContextMenu from "./components/ContextMenu.svelte";
   import PlayerDock from "./components/PlayerDock.svelte";
   import SongCard from "./components/SongCard.svelte";
-  import { makeTrack, player, playLater, playNext, playNow, playQueue, restorePlayer } from "./lib/player";
+  import { makeTrack, player, playLater, playNext, playQueue, restorePlayer } from "./lib/player";
   import type { PlayerState } from "./lib/player";
   import type { LibraryResult, ParentFolder, PlayerTrack, Song } from "./lib/types";
 
@@ -151,6 +151,12 @@
   function shuffle(): void {
     if (!library?.songs.length) return;
     playQueue(shuffleInPlace(library.songs.map((song) => makeTrack(song))));
+  }
+
+  function playFromList(track: PlayerTrack): void {
+    const songIndex = filteredSongs.findIndex(({ folderId }) => folderId === track.folderId);
+    const following = songIndex >= 0 ? filteredSongs.slice(songIndex + 1).map((song) => makeTrack(song)) : [];
+    playQueue([track, ...following]);
   }
 
   function toggleRandomOrder(): void {
@@ -341,7 +347,7 @@
         <div class="column-head"><span>SONG</span><span>LATEST VERSION</span><span>HISTORY</span><span>COLLECTION</span><span></span></div>
         <div class="song-list">
           {#each filteredSongs as song (song.id)}
-            <SongCard {song} onplay={playNow} oncontext={showContext} />
+            <SongCard {song} onplay={playFromList} oncontext={showContext} />
           {/each}
         </div>
         {#if !filteredSongs.length}<div class="empty-filter">No songs match “{search}”.</div>{/if}
