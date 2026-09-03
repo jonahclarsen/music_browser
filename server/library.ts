@@ -5,6 +5,15 @@ import type { LibraryResult, ParentFolder, Song, SongVersion } from "../src/lib/
 
 const VERSION_PATTERN = /v(\d+)\.(\d+)/i;
 const AUDIO_EXTENSIONS = new Set([".mp3", ".wav"]);
+const SCAN_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface ScanCacheEntry {
+  createdAt: number;
+  folderSignature: string;
+  result: LibraryResult;
+}
+
+const scanCache = new Map<string, ScanCacheEntry>();
 
 export const mediaRegistry = new Map<string, string>();
 export const folderRegistry = new Map<string, string>();
@@ -97,8 +106,14 @@ function newestFirst(a: SongVersion, b: SongVersion): number {
 export async function scanLibrary(directory: string, includedFolders: string[]): Promise<LibraryResult> {
   const root = await assertDirectory(directory);
   const available = await fs.readdir(root, { withFileTypes: true });
-  const allowed = new Set(available.filter((entry) => entry.isDirectory()).map((entry) => entry.name));
+  const allowed = new Set(available.filter((entry) => entry.isDirectory() && !entry.name.startsWith(".")).map((entry) => entry.name));
   const selected = [...new Set(includedFolders)].filter((name) => allowed.has(name));
+  const folderSignature = [...allowed].sort().join("\0");
+  const cacheKey = `${root}\0${[...selected].sort().join("\0")}`;
+  const cached = scanCache.get(cacheKey);
+  if (cached && Date.now() - cached.createdAt < SCAN_CACHE_TTL_MS && cached.folderSignature === folderSignature) {
+    return cached.result;
+  }
   const songs: Song[] = [];
   let scannedProjectCount = 0;
 
@@ -114,6 +129,13 @@ export async function scanLibrary(directory: string, includedFolders: string[]):
       const versions = (await Promise.all(files.map(toVersion))).filter((value): value is SongVersion => value !== null).sort(newestFirst);
       if (versions.length === 0) continue;
 
+      const projectRootEntries = await fs.readdir(projectPath, { withFileTypes: true });
+      const rootAlsFiles = projectRootEntries.filter(
+        (entry) => entry.isFile() && path.extname(entry.name).toLowerCase() === ".als",
+      );
+      const alsDates = await Promise.all(rootAlsFiles.map(async (entry) => (await fs.stat(path.join(projectPath, entry.name))).mtimeMs));
+      const date = alsDates.length ? Math.min(...alsDates) : Math.min(...versions.map(({ modifiedAt }) => modifiedAt));
+
       const folderId = stableId(projectPath);
       folderRegistry.set(folderId, projectPath);
       const song: Song = {
@@ -121,6 +143,7 @@ export async function scanLibrary(directory: string, includedFolders: string[]):
         name: project.name.replace(/ Project$/i, ""),
         parentFolder: parentName,
         folderId,
+        date,
         latest: versions[0],
         versions,
       };
@@ -133,5 +156,7 @@ export async function scanLibrary(directory: string, includedFolders: string[]):
       b.latest.modifiedAt - a.latest.modifiedAt ||
       a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }),
   );
-  return { directory: root, songs, scannedProjectCount };
+  const result = { directory: root, songs, scannedProjectCount };
+  scanCache.set(cacheKey, { createdAt: Date.now(), folderSignature, result });
+  return result;
 }

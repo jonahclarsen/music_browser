@@ -61,4 +61,40 @@ describe("library scanner", () => {
     const result = await scanLibrary(root, ["Current"]);
     expect(result.songs.map(({ name }) => name)).toEqual(["Signal Bloom", "Glass Houses"]);
   });
+
+  it("uses the oldest root Ableton file as the song date, falling back to the oldest audio version", async () => {
+    const root = await fixture();
+    const project = path.join(root, "Current", "Glass Houses Project");
+    const exportsDirectory = path.join(project, "Exports");
+    const audioOne = path.join(exportsDirectory, "Glass Houses v1.0.mp3");
+    const audioTwo = path.join(exportsDirectory, "Glass Houses v2.0.mp3");
+    const alsOne = path.join(project, "Glass Houses.als");
+    const alsTwo = path.join(project, "Glass Houses backup.als");
+    await writeFile(audioOne, "audio");
+    await writeFile(audioTwo, "audio");
+    await writeFile(alsOne, "ableton");
+    await writeFile(alsTwo, "ableton");
+    await utimes(audioOne, new Date(3_000), new Date(3_000));
+    await utimes(audioTwo, new Date(4_000), new Date(4_000));
+    await utimes(alsOne, new Date(2_000), new Date(2_000));
+    await utimes(alsTwo, new Date(1_000), new Date(1_000));
+
+    const result = await scanLibrary(root, ["Current"]);
+    expect(result.songs[0].date).toBe(1_000);
+  });
+
+  it("reuses a recent scan while the root folder set and selection are unchanged", async () => {
+    const root = await fixture();
+    const firstAudio = path.join(root, "Current", "Glass Houses Project", "Exports", "Glass Houses v1.0.mp3");
+    await writeFile(firstAudio, "audio");
+    const first = await scanLibrary(root, ["Current"]);
+
+    const newProject = path.join(root, "Current", "Not Yet Rescanned Project");
+    await mkdir(newProject);
+    await writeFile(path.join(newProject, "Not Yet Rescanned v1.0.mp3"), "audio");
+    const second = await scanLibrary(root, ["Current"]);
+
+    expect(second).toBe(first);
+    expect(second.songs.map(({ name }) => name)).toEqual(["Glass Houses"]);
+  });
 });

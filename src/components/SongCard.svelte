@@ -4,9 +4,12 @@
 
   export let song: Song;
   export let onplay: (track: PlayerTrack) => void;
+  export let onpreviewstart: (track: PlayerTrack) => void;
+  export let onpreviewend: () => void;
   export let oncontext: (event: MouseEvent, track: PlayerTrack, folderId?: string) => void;
   export let current = false;
   export let playing = false;
+  export let highlighted = false;
 
   let expanded = false;
 
@@ -30,9 +33,24 @@
     event.preventDefault();
     oncontext(event, makeTrack(song), song.folderId);
   }
+
+  function previewStart(event: PointerEvent): void {
+    event.stopPropagation();
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    onpreviewstart(makeTrack(song));
+  }
+
+  function previewEnd(event: PointerEvent): void {
+    event.stopPropagation();
+    onpreviewend();
+  }
+
+  function formatDate(timestamp: number): string {
+    return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(timestamp);
+  }
 </script>
 
-<article class:current class:expanded class="song-card" on:contextmenu={cardContext}>
+<article id={`song-${song.id}`} class:current class:expanded class:highlighted class="song-card" on:contextmenu={cardContext}>
   <button
     class="card-play"
     type="button"
@@ -50,8 +68,20 @@
       <span class="song-name">{song.name}</span>
     </span>
     <span class="latest-file">{song.latest.filename}</span>
+    <time class="song-date" datetime={new Date(song.date).toISOString()}>{formatDate(song.date)}</time>
     <span class="count">{song.versions.length} {song.versions.length === 1 ? "version" : "versions"}</span>
     <span class="parent">{song.parentFolder}</span>
+    <button
+      class="preview-button"
+      type="button"
+      aria-label={`Hold to preview ${song.name}`}
+      title="Hold to preview from the start"
+      on:pointerdown={previewStart}
+      on:pointerup={previewEnd}
+      on:pointercancel={previewEnd}
+      on:lostpointercapture={previewEnd}
+      on:click={(event) => event.stopPropagation()}
+    >PREVIEW</button>
     <button
       class="expand-button"
       type="button"

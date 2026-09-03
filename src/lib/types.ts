@@ -17,6 +17,7 @@ export interface Song {
   name: string;
   parentFolder: string;
   folderId: string;
+  date: number;
   latest: SongVersion;
   versions: SongVersion[];
 }
@@ -31,4 +32,5 @@ export interface PlayerTrack extends SongVersion {
   songName: string;
   parentFolder: string;
   folderId: string;
+  songDate: number;
 }

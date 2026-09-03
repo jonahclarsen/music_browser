@@ -37,17 +37,24 @@ Each direct child of a selected collection is treated as one song project. Audio
 
 Versions are ordered by version number. Files with the same version are ordered by modification date. The song title comes from its project folder, with a trailing ` Project` removed.
 
-Songs are listed by the modification time of their latest export, newest first. **Random Order** temporarily gives the visible list a random order and restores newest-first order when switched off.
+Songs are listed by the modification time of their latest export, newest first. Their displayed date is the oldest root-level Ableton `.als` file date, or the oldest audio-version date when no root `.als` exists. **Random Order** temporarily gives the visible list a random order and restores newest-first order when switched off.
 
 ## Playback
 
 - Click anywhere on a card to play its latest version.
+- Hold **Preview** to audition a song from the beginning without changing the player. Releasing it resumes the player at exactly the position where it was parked.
 - Click the card's wide arrow control to expand its version history.
 - The current song is marked in the list; its indicator animates while playback is active.
 - Right-click a card or version for Finder and queue actions.
 - **Shuffle All** uses an unbiased Fisher–Yates shuffle backed by `crypto.getRandomValues`, with one entry per song.
 - Playback passes through a lightweight Web Audio gain and dynamics chain. It lifts quiet demos and constrains mastered tracks in real time, avoiding slow preprocessing and duplicate normalized files.
-- The selected library is rescanned at launch. List order, queue order, current track, playback position, playing/paused state, and volume are restored from local storage after that scan.
+- Returning to a track within ten seconds resumes the position where it was left.
+- Click the current song or filename in the bottom player to center and briefly highlight its list row.
+- Recent scans are reused for five minutes when the root's immediate folder set and selected collections have not changed. List order, queue order, current track, playback position, playing/paused state, and volume are restored from local storage.
+
+## Interface
+
+The Frost appearance is permanent. The compact header, library controls, and player remain fixed while only the song list scrolls. Settings expands below the header and includes separate live, persisted font choices for interface, display, and technical text.
 
 ## Development
 

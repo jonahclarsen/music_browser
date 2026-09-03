@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { get } from "svelte/store";
   import ContextMenu from "./components/ContextMenu.svelte";
   import PlayerDock from "./components/PlayerDock.svelte";
   import SongCard from "./components/SongCard.svelte";
-  import { makeTrack, player, playLater, playNext, playQueue, restorePlayer } from "./lib/player";
+  import { makeTrack, player, playLater, playNext, playQueue, restorePlayer, startPreview, stopPreview } from "./lib/player";
   import type { PlayerState } from "./lib/player";
-  import { THEMES, applyTheme, readSavedTheme, setTheme, theme } from "./lib/theme";
+  import { DEFAULT_FONTS, FONT_OPTIONS, applyFonts, readFonts, saveFonts } from "./lib/fonts";
+  import type { FontRole, FontSelections } from "./lib/fonts";
   import type { LibraryResult, ParentFolder, PlayerTrack, Song } from "./lib/types";
 
   interface MenuState {
@@ -40,7 +41,6 @@
   let scanning = false;
   let pickerOpen = false;
   let error = "";
-  let notice = "";
   let search = "";
   let menu: MenuState | null = null;
   let settingsOpen = false;
@@ -49,6 +49,9 @@
   let analyzedFolders: string[] = [];
   let sessionReady = false;
   let saveTimer: number | undefined;
+  let highlightTimer: number | undefined;
+  let highlightedSongId = "";
+  let fonts: FontSelections = { ...DEFAULT_FONTS };
 
   $: orderedSongs = randomOrder && library
     ? randomSongIds.map((id) => library!.songs.find((song) => song.id === id)).filter((song): song is Song => Boolean(song))
@@ -112,16 +115,12 @@
     if (!selected.size) return;
     scanning = true;
     error = "";
-    notice = "";
     try {
       library = await api<LibraryResult>("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ directory, includedFolders: [...selected] }),
       });
-      notice = library.songs.length
-        ? `Found ${library.songs.length} ${library.songs.length === 1 ? "song" : "songs"} across ${library.scannedProjectCount} project folders.`
-        : `No versioned MP3 or WAV files were found in ${library.scannedProjectCount} project folders.`;
       randomOrder = false;
       randomSongIds = [];
       analyzedFolders = [...selected];
@@ -179,6 +178,30 @@
 
   function handleWindowKeydown(event: KeyboardEvent): void {
     if (settingsOpen && event.key === "Escape") settingsOpen = false;
+  }
+
+  function handleWindowPointerDown(event: PointerEvent): void {
+    if (!settingsOpen || !(event.target instanceof Element)) return;
+    if (event.target.closest(".site-header, .settings-drawer")) return;
+    settingsOpen = false;
+  }
+
+  function changeFont(role: FontRole, event: Event): void {
+    fonts = { ...fonts, [role]: (event.currentTarget as HTMLSelectElement).value };
+    saveFonts(fonts);
+  }
+
+  async function locateSong(folderId: string): Promise<void> {
+    const song = library?.songs.find((item) => item.folderId === folderId);
+    if (!song) return;
+    settingsOpen = false;
+    search = "";
+    highlightedSongId = "";
+    await tick();
+    document.getElementById(`song-${song.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    highlightedSongId = song.id;
+    if (highlightTimer !== undefined) window.clearTimeout(highlightTimer);
+    highlightTimer = window.setTimeout(() => (highlightedSongId = ""), 2400);
   }
 
   function writeSession(): void {
@@ -258,23 +281,25 @@
   }
 
   onMount(() => {
-    theme.set(readSavedTheme());
-    const unsubscribeTheme = theme.subscribe(applyTheme);
+    document.documentElement.dataset.theme = "frost";
+    fonts = readFonts();
+    applyFonts(fonts);
     const unsubscribe = player.subscribe(scheduleSessionWrite);
     const persistNow = () => writeSession();
     window.addEventListener("pagehide", persistNow);
     void restoreSession();
     return () => {
-      unsubscribeTheme();
       unsubscribe();
       window.removeEventListener("pagehide", persistNow);
       if (saveTimer !== undefined) window.clearTimeout(saveTimer);
+      if (highlightTimer !== undefined) window.clearTimeout(highlightTimer);
+      stopPreview();
     };
   });
 </script>
 
 <svelte:head><title>{library ? `${library.songs.length} songs · Music Browser` : "Music Browser"}</title></svelte:head>
-<svelte:window on:keydown={handleWindowKeydown} />
+<svelte:window on:keydown={handleWindowKeydown} on:pointerdown={handleWindowPointerDown} on:pointerup={stopPreview} on:blur={stopPreview} />
 
 {#snippet directorySettings()}
   <div class="setup-panel">
@@ -313,58 +338,93 @@
   </div>
 {/snippet}
 
-<main>
+<main class:has-library={Boolean(library)}>
   <header class="site-header">
     <a class="brand" href="/" aria-label="Music Browser home">
       <span class="brand-disc"><i></i></span>
       <span>MUSIC<br />BROWSER</span>
     </a>
     {#if library}
-      <button class="settings-button" type="button" on:click={() => (settingsOpen = true)}>
+      <button class:active={settingsOpen} class="settings-button" type="button" aria-expanded={settingsOpen} on:click={() => (settingsOpen = !settingsOpen)}>
         <svg class="icon-gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.2h12.4M1.8 10.8h12.4" /><circle cx="5.6" cy="5.2" r="1.9" /><circle cx="10.4" cy="10.8" r="1.9" /></svg>
         SETTINGS
       </button>
     {/if}
   </header>
 
+  {#if library}
+    <div class:open={settingsOpen} class="settings-drawer" aria-hidden={!settingsOpen}>
+      <div class="settings-drawer-inner">
+        <section class="settings-panel" aria-labelledby="settings-title">
+          <header>
+            <h2 id="settings-title">Settings</h2>
+            <button type="button" aria-label="Close settings" on:click={() => (settingsOpen = false)}>×</button>
+          </header>
+          <div class="settings-content">
+            {@render directorySettings()}
+            <section class="font-panel" aria-labelledby="font-title">
+              <div class="step-label" id="font-title"><span>03</span> TYPOGRAPHY</div>
+              <div class="font-grid">
+                <label>
+                  <span>Interface text</span>
+                  <select value={fonts.sans} style:font-family={fonts.sans} on:change={(event) => changeFont("sans", event)}>
+                    {#each FONT_OPTIONS.sans as option (option.value)}<option value={option.value}>{option.name}</option>{/each}
+                  </select>
+                </label>
+                <label>
+                  <span>Headings &amp; display</span>
+                  <select value={fonts.display} style:font-family={fonts.display} on:change={(event) => changeFont("display", event)}>
+                    {#each FONT_OPTIONS.display as option (option.value)}<option value={option.value}>{option.name}</option>{/each}
+                  </select>
+                </label>
+                <label>
+                  <span>Files, labels &amp; times</span>
+                  <select value={fonts.mono} style:font-family={fonts.mono} on:change={(event) => changeFont("mono", event)}>
+                    {#each FONT_OPTIONS.mono as option (option.value)}<option value={option.value}>{option.name}</option>{/each}
+                  </select>
+                </label>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+  {/if}
+
   {#if !library}<section class="hero">{@render directorySettings()}</section>{/if}
 
   {#if error}<div class="message error-message" role="alert"><span>!</span>{error}<button type="button" on:click={() => (error = "")}>×</button></div>{/if}
 
   {#if library}
-    <section class="library-section">
-      <div class="library-heading">
-        <div>
-          <h2>{library.songs.length} {library.songs.length === 1 ? "song" : "songs"}</h2>
-          {#if notice}<p>{notice}</p>{/if}
-        </div>
+    <section class="library-section" aria-label="Song library">
+      <div class="list-tools">
+        <label class="search-box">
+          <svg class="icon-search" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.9" cy="6.9" r="4.6" /><path d="m10.3 10.3 3.5 3.5" /></svg>
+          <input bind:value={search} placeholder="Filter songs, files, folders…" />
+        </label>
+        <div class="list-actions">
         <button class="shuffle-button" type="button" disabled={!library.songs.length} on:click={shuffle}>
           <svg class="icon-shuffle" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h2.7l7.6 9h2.7M1.5 12.5h2.7l7.6-9h2.7" /><path d="M12.3 1.6 14.5 3.5l-2.2 1.9M12.3 10.6l2.2 1.9-2.2 1.9" /></svg>
           SHUFFLE ALL
         </button>
+          <button class:active={randomOrder} class="random-order-button" type="button" aria-pressed={randomOrder} on:click={toggleRandomOrder}>
+            <span>{randomOrder ? "✓" : ""}</span> RANDOM ORDER
+          </button>
+        </div>
       </div>
 
       {#if library.songs.length}
-        <div class="list-tools">
-          <label class="search-box">
-            <svg class="icon-search" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.9" cy="6.9" r="4.6" /><path d="m10.3 10.3 3.5 3.5" /></svg>
-            <input bind:value={search} placeholder="Filter songs, files, folders…" />
-          </label>
-          <div class="list-actions">
-            <button class:active={randomOrder} class="random-order-button" type="button" aria-pressed={randomOrder} on:click={toggleRandomOrder}>
-              <span>{randomOrder ? "✓" : ""}</span> RANDOM ORDER
-            </button>
-            <div>{filteredSongs.length} SHOWN</div>
-          </div>
-        </div>
-        <div class="column-head"><span>SONG</span><span>LATEST VERSION</span><span>HISTORY</span><span>COLLECTION</span><span></span></div>
+        <div class="column-head"><span>SONG</span><span>LATEST VERSION</span><span>DATE</span><span>HISTORY</span><span>COLLECTION</span><span></span><span></span></div>
         <div class="song-list">
           {#each filteredSongs as song (song.id)}
             <SongCard
               {song}
               current={$player.current?.folderId === song.folderId}
               playing={$player.current?.folderId === song.folderId && $player.isPlaying}
+              highlighted={highlightedSongId === song.id}
               onplay={playFromList}
+              onpreviewstart={startPreview}
+              onpreviewend={stopPreview}
               oncontext={showContext}
             />
           {/each}
@@ -376,38 +436,6 @@
     </section>
   {/if}
 </main>
-
-{#if settingsOpen}
-  <div class="settings-shell">
-    <button class="settings-backdrop" type="button" aria-label="Close settings" on:click={() => (settingsOpen = false)}></button>
-    <div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" tabindex="-1">
-      <header>
-        <div><span>LIBRARY</span><h2 id="settings-title">Settings</h2></div>
-        <button type="button" aria-label="Close settings" on:click={() => (settingsOpen = false)}>×</button>
-      </header>
-      {@render directorySettings()}
-      <section class="theme-panel" aria-labelledby="theme-title">
-        <div class="step-label" id="theme-title"><span>03</span> APPEARANCE</div>
-        <div class="theme-grid" role="radiogroup" aria-label="Theme">
-          {#each THEMES as option (option.id)}
-            <button
-              type="button"
-              role="radio"
-              class="theme-option"
-              class:selected={$theme === option.id}
-              aria-checked={$theme === option.id}
-              on:click={() => setTheme(option.id)}
-            >
-              <span class="theme-swatch" data-theme={option.id} aria-hidden="true"><b>Aa</b><i></i><i></i></span>
-              <strong>{option.name}{#if $theme === option.id}<span class="theme-check" aria-hidden="true">●</span>{/if}</strong>
-              <small>{option.tagline}</small>
-            </button>
-          {/each}
-        </div>
-      </section>
-    </div>
-  </div>
-{/if}
 
 {#if menu}
   <ContextMenu
@@ -422,4 +450,4 @@
   />
 {/if}
 
-<PlayerDock />
+<PlayerDock onlocate={locateSong} />
