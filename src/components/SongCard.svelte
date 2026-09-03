@@ -66,22 +66,22 @@
         </span>
       {/if}
       <span class="song-name">{song.name}</span>
+      <button
+        class="preview-button"
+        type="button"
+        aria-label={`Hold to preview ${song.name}`}
+        title="Hold to preview from the start"
+        on:pointerdown={previewStart}
+        on:pointerup={previewEnd}
+        on:pointercancel={previewEnd}
+        on:lostpointercapture={previewEnd}
+        on:click={(event) => event.stopPropagation()}
+      >PREVIEW</button>
     </span>
     <span class="latest-file">{song.latest.filename}</span>
     <time class="song-date" datetime={new Date(song.date).toISOString()}>{formatDate(song.date)}</time>
     <span class="count">{song.versions.length} {song.versions.length === 1 ? "version" : "versions"}</span>
     <span class="parent">{song.parentFolder}</span>
-    <button
-      class="preview-button"
-      type="button"
-      aria-label={`Hold to preview ${song.name}`}
-      title="Hold to preview from the start"
-      on:pointerdown={previewStart}
-      on:pointerup={previewEnd}
-      on:pointercancel={previewEnd}
-      on:lostpointercapture={previewEnd}
-      on:click={(event) => event.stopPropagation()}
-    >PREVIEW</button>
     <button
       class="expand-button"
       type="button"

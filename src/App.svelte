@@ -380,7 +380,7 @@
       </div>
 
       {#if library.songs.length}
-        <div class="column-head"><span>SONG</span><span>LATEST VERSION</span><span>DATE</span><span>HISTORY</span><span>COLLECTION</span><span></span><span></span></div>
+        <div class="column-head"><span>TITLE</span><span>LATEST VERSION</span><span>DATE</span><span>VERSION COUNT</span><span>STATUS</span><span></span></div>
         <div class="song-list">
           {#each filteredSongs as song (song.id)}
             <SongCard
