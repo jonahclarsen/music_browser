@@ -2,11 +2,14 @@
   import { onMount } from "svelte";
   import { moveQueue, player, removeQueueItem, selectQueueIndex, setPlaying, setPosition, togglePlaylist } from "../lib/player";
 
+  const VOLUME_KEY = "music-browser-volume";
+  const DEFAULT_VOLUME = 0.72;
+
   let audio: HTMLAudioElement;
   let audioContext: AudioContext | null = null;
   let volumeGain: GainNode | null = null;
   let loadedId = "";
-  let volume = 0.72;
+  let volume = DEFAULT_VOLUME;
   let elapsed = 0;
   let duration = 0;
   let pendingPosition = 0;
@@ -57,6 +60,22 @@
   function changeVolume(event: Event): void {
     volume = Number((event.currentTarget as HTMLInputElement).value);
     if (volumeGain) volumeGain.gain.value = volume;
+    try {
+      localStorage.setItem(VOLUME_KEY, String(volume));
+    } catch {
+      // Volume still works when storage is unavailable.
+    }
+  }
+
+  function readSavedVolume(): number {
+    try {
+      const saved = localStorage.getItem(VOLUME_KEY);
+      if (saved === null) return DEFAULT_VOLUME;
+      const value = Number(saved);
+      return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : DEFAULT_VOLUME;
+    } catch {
+      return DEFAULT_VOLUME;
+    }
   }
 
   async function revealSongFolder(): Promise<void> {
@@ -96,6 +115,8 @@
   $: if (audio && loadedId && $player.isPlaying && audio.paused) void ensurePlaying();
 
   onMount(() => {
+    volume = readSavedVolume();
+    if (volumeGain) volumeGain.gain.value = volume;
     const resume = () => {
       if ($player.isPlaying && audio.paused) void ensurePlaying();
       else void audioContext?.resume();

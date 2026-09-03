@@ -47,7 +47,7 @@ Songs are listed by the modification time of their latest export, newest first. 
 - Right-click a card or version for Finder and queue actions.
 - **Shuffle All** uses an unbiased Fisher–Yates shuffle backed by `crypto.getRandomValues`, with one entry per song.
 - Playback passes through a lightweight Web Audio gain and dynamics chain. It lifts quiet demos and constrains mastered tracks in real time, avoiding slow preprocessing and duplicate normalized files.
-- The selected library is rescanned at launch. List order, queue order, current track, playback position, and playing/paused state are restored from local storage after that scan.
+- The selected library is rescanned at launch. List order, queue order, current track, playback position, playing/paused state, and volume are restored from local storage after that scan.
 
 ## Development
 
