@@ -6,8 +6,6 @@
   import SongCard from "./components/SongCard.svelte";
   import { makeTrack, player, playLater, playNext, playQueue, restorePlayer, startPreview, stopPreview } from "./lib/player";
   import type { PlayerState } from "./lib/player";
-  import { DEFAULT_FONTS, FONT_OPTIONS, applyFonts, readFonts, saveFonts } from "./lib/fonts";
-  import type { FontRole, FontSelections } from "./lib/fonts";
   import type { LibraryResult, ParentFolder, PlayerTrack, Song } from "./lib/types";
 
   interface MenuState {
@@ -51,7 +49,6 @@
   let saveTimer: number | undefined;
   let highlightTimer: number | undefined;
   let highlightedSongId = "";
-  let fonts: FontSelections = { ...DEFAULT_FONTS };
 
   $: orderedSongs = randomOrder && library
     ? randomSongIds.map((id) => library!.songs.find((song) => song.id === id)).filter((song): song is Song => Boolean(song))
@@ -186,11 +183,6 @@
     settingsOpen = false;
   }
 
-  function changeFont(role: FontRole, event: Event): void {
-    fonts = { ...fonts, [role]: (event.currentTarget as HTMLSelectElement).value };
-    saveFonts(fonts);
-  }
-
   async function locateSong(folderId: string): Promise<void> {
     const song = library?.songs.find((item) => item.folderId === folderId);
     if (!song) return;
@@ -282,8 +274,6 @@
 
   onMount(() => {
     document.documentElement.dataset.theme = "frost";
-    fonts = readFonts();
-    applyFonts(fonts);
     const unsubscribe = player.subscribe(scheduleSessionWrite);
     const persistNow = () => writeSession();
     window.addEventListener("pagehide", persistNow);
@@ -341,8 +331,7 @@
 <main class:has-library={Boolean(library)}>
   <header class="site-header">
     <a class="brand" href="/" aria-label="Music Browser home">
-      <span class="brand-disc"><i></i></span>
-      <span>MUSIC<br />BROWSER</span>
+      <span>MUSIC BROWSER</span>
     </a>
     {#if library}
       <button class:active={settingsOpen} class="settings-button" type="button" aria-expanded={settingsOpen} on:click={() => (settingsOpen = !settingsOpen)}>
@@ -362,29 +351,6 @@
           </header>
           <div class="settings-content">
             {@render directorySettings()}
-            <section class="font-panel" aria-labelledby="font-title">
-              <div class="step-label" id="font-title"><span>03</span> TYPOGRAPHY</div>
-              <div class="font-grid">
-                <label>
-                  <span>Interface text</span>
-                  <select value={fonts.sans} style:font-family={fonts.sans} on:change={(event) => changeFont("sans", event)}>
-                    {#each FONT_OPTIONS.sans as option (option.value)}<option value={option.value}>{option.name}</option>{/each}
-                  </select>
-                </label>
-                <label>
-                  <span>Headings &amp; display</span>
-                  <select value={fonts.display} style:font-family={fonts.display} on:change={(event) => changeFont("display", event)}>
-                    {#each FONT_OPTIONS.display as option (option.value)}<option value={option.value}>{option.name}</option>{/each}
-                  </select>
-                </label>
-                <label>
-                  <span>Files, labels &amp; times</span>
-                  <select value={fonts.mono} style:font-family={fonts.mono} on:change={(event) => changeFont("mono", event)}>
-                    {#each FONT_OPTIONS.mono as option (option.value)}<option value={option.value}>{option.name}</option>{/each}
-                  </select>
-                </label>
-              </div>
-            </section>
           </div>
         </section>
       </div>
@@ -403,12 +369,12 @@
           <input bind:value={search} placeholder="Filter songs, files, folders…" />
         </label>
         <div class="list-actions">
-        <button class="shuffle-button" type="button" disabled={!library.songs.length} on:click={shuffle}>
-          <svg class="icon-shuffle" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h2.7l7.6 9h2.7M1.5 12.5h2.7l7.6-9h2.7" /><path d="M12.3 1.6 14.5 3.5l-2.2 1.9M12.3 10.6l2.2 1.9-2.2 1.9" /></svg>
-          SHUFFLE ALL
-        </button>
           <button class:active={randomOrder} class="random-order-button" type="button" aria-pressed={randomOrder} on:click={toggleRandomOrder}>
             <span>{randomOrder ? "✓" : ""}</span> RANDOM ORDER
+          </button>
+          <button class="shuffle-button" type="button" disabled={!library.songs.length} on:click={shuffle}>
+            <svg class="icon-shuffle" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h2.7l7.6 9h2.7M1.5 12.5h2.7l7.6-9h2.7" /><path d="M12.3 1.6 14.5 3.5l-2.2 1.9M12.3 10.6l2.2 1.9-2.2 1.9" /></svg>
+            SHUFFLE ALL
           </button>
         </div>
       </div>
@@ -450,4 +416,4 @@
   />
 {/if}
 
-<PlayerDock onlocate={locateSong} />
+<PlayerDock onlocate={locateSong} oncontext={showContext} />

@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { moveQueue, player, preview, removeQueueItem, selectQueueIndex, setPlaying, setPosition, togglePlaylist } from "../lib/player";
+  import type { PlayerTrack } from "../lib/types";
 
   export let onlocate: (folderId: string) => void;
+  export let oncontext: (event: MouseEvent, track: PlayerTrack, folderId?: string) => void;
 
   const VOLUME_KEY = "music-browser-volume";
   const DEFAULT_VOLUME = 0.72;
@@ -100,13 +102,11 @@
     }
   }
 
-  async function revealSongFolder(): Promise<void> {
+  function showPlayerContext(event: MouseEvent): void {
     if (!$player.current) return;
-    await fetch("/api/reveal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: $player.current.folderId, kind: "folder" }),
-    });
+    event.preventDefault();
+    event.stopPropagation();
+    oncontext(event, $player.current, $player.current.folderId);
   }
 
   function syncTime(): void {
@@ -194,13 +194,12 @@
 
   <div class="now-playing">
     {#if $player.current}
-      <div class="album-mark" class:active={$player.isPlaying && !$preview} aria-hidden="true"><i></i><i></i><i></i></div>
-      <button type="button" class="now-playing-copy" on:click={() => onlocate($player.current!.folderId)} title="Find this song in the list">
+      <button type="button" class="album-mark" class:active={$player.isPlaying && !$preview} aria-label="Current song options" on:click={() => onlocate($player.current!.folderId)} on:contextmenu={showPlayerContext}><i></i><i></i><i></i></button>
+      <button type="button" class="now-playing-copy" on:click={() => onlocate($player.current!.folderId)} on:contextmenu={showPlayerContext} title="Find this song in the list">
         <strong>{$player.current.songName}</strong>
         <span>{$player.current.filename}</span>
         <time datetime={new Date($player.current.songDate).toISOString()}>{formatDate($player.current.songDate)}</time>
       </button>
-      <button class="finder-button" type="button" on:click={revealSongFolder} title="Open song folder in Finder"><svg class="icon-folder" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.8 14.2V4h5l1.7 2h7.7v8.2z" /></svg><span>OPEN IN FINDER</span></button>
     {/if}
   </div>
 
@@ -216,7 +215,7 @@
   </div>
 
   <div class="player-tools">
-    <button class="queue-button" class:active={$player.playlistVisible} type="button" disabled={!$player.queue.length} on:click={togglePlaylist} aria-label="Show play queue"><svg class="icon-queue" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h13M1.5 8h13M1.5 12h13" /></svg><span>{$player.queue.length || ""}</span></button>
+    <button class="queue-button" class:active={$player.playlistVisible} type="button" disabled={!$player.queue.length} on:click={togglePlaylist} aria-label="Show play queue"><svg class="icon-queue" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h13M1.5 8h13M1.5 12h13" /></svg></button>
     <label class="volume-control"><svg class="icon-volume" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 8h3.2L10 4.5v11l-4.3-3.5H2.5z" /><path d="M13 7a4 4 0 0 1 0 6M15.6 4.7a7.1 7.1 0 0 1 0 10.6" /></svg><input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={volume} on:input={changeVolume} /></label>
   </div>
 </footer>

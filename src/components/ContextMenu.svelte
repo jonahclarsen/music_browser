@@ -31,7 +31,7 @@
 
 <div class="context-menu" role="menu" tabindex="-1" style:left="{left}px" style:top="{top}px">
   <div class="context-title">{track.songName}</div>
-  <button type="button" role="menuitem" on:click={reveal}>Reveal {folderId ? "Folder" : "File"} in Finder</button>
+  <button type="button" role="menuitem" on:click={reveal}>Open in Finder</button>
   <button type="button" role="menuitem" on:click={() => (onnext(track), onclose())}>Play Next</button>
   <button type="button" role="menuitem" on:click={() => (onlater(track), onclose())}>Play Later</button>
 </div>

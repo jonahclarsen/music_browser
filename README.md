@@ -45,7 +45,7 @@ Songs are listed by the modification time of their latest export, newest first. 
 - Hold **Preview** to audition a song from the beginning without changing the player. Releasing it resumes the player at exactly the position where it was parked.
 - Click the card's wide arrow control to expand its version history.
 - The current song is marked in the list; its indicator animates while playback is active.
-- Right-click a card or version for Finder and queue actions.
+- Right-click a card, version, or the current track in the player for Finder and queue actions.
 - **Shuffle All** uses an unbiased Fisher–Yates shuffle backed by `crypto.getRandomValues`, with one entry per song.
 - Playback passes through a lightweight Web Audio gain and dynamics chain. It lifts quiet demos and constrains mastered tracks in real time, avoiding slow preprocessing and duplicate normalized files.
 - Returning to a track within ten seconds resumes the position where it was left.
@@ -54,7 +54,7 @@ Songs are listed by the modification time of their latest export, newest first. 
 
 ## Interface
 
-The Frost appearance is permanent. The compact header, library controls, and player remain fixed while only the song list scrolls. Settings expands below the header and includes separate live, persisted font choices for interface, display, and technical text.
+The Frost appearance is permanent. Interface, display, and technical text use Avenir Next, Helvetica Neue, and Roboto Mono respectively. The compact header, library controls, and player remain fixed while only the song list scrolls.
 
 ## Development
 
