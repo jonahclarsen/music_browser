@@ -39,13 +39,9 @@ main { width: min(1480px, calc(100% - 72px)); margin: 0 auto; padding-bottom: 15
 .local-label { font: 400 10px "JetBrains Mono", monospace; letter-spacing: .14em; color: var(--muted); }
 .local-label i { display: inline-block; width: 7px; height: 7px; margin-right: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
 
-.hero { display: grid; grid-template-columns: minmax(420px, .95fr) minmax(480px, 1.05fr); gap: clamp(50px, 8vw, 140px); padding: 92px 2vw 86px; align-items: start; }
+.hero { padding: 64px 2vw 72px; }
 .eyebrow { margin: 0 0 20px; color: var(--accent); font: 400 10px "JetBrains Mono", monospace; letter-spacing: .19em; }
-h1 { margin: 0; max-width: 720px; font-size: clamp(48px, 5.7vw, 86px); line-height: .95; letter-spacing: -.055em; font-weight: 520; }
-h1 em { color: var(--muted); font-weight: 420; }
-.intro { max-width: 570px; margin: 30px 0 0; color: #aaa8a1; line-height: 1.65; font-size: 15px; }
-
-.setup-panel { background: rgba(24,24,23,.92); border: 1px solid var(--line); box-shadow: 0 34px 90px rgba(0,0,0,.22); }
+.setup-panel { width: 100%; background: rgba(24,24,23,.92); border: 1px solid var(--line); box-shadow: 0 34px 90px rgba(0,0,0,.22); }
 .step-label { color: #aaa8a1; font: 400 10px "JetBrains Mono", monospace; letter-spacing: .13em; }
 .step-label span { color: var(--accent); margin-right: 9px; }
 .setup-panel > .step-label { padding: 24px 26px 15px; }
@@ -187,7 +183,7 @@ input[type="range"] { height: 2px; accent-color: var(--accent); cursor: pointer;
 
 @media (max-width: 900px) {
   main { width: min(100% - 36px, 760px); }
-  .hero { grid-template-columns: 1fr; gap: 50px; padding: 64px 0; }
+  .hero { padding: 50px 0 58px; }
   .library-section { padding-left: 0; padding-right: 0; }
   .column-head { display: none; }
   .song-summary { grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.3fr) 85px 24px; }
@@ -199,9 +195,7 @@ input[type="range"] { height: 2px; accent-color: var(--accent); cursor: pointer;
 @media (max-width: 620px) {
   main { width: calc(100% - 24px); padding-bottom: 125px; }
   .site-header { height: 75px; }
-  .hero { padding: 44px 0; }
-  h1 { font-size: 45px; }
-  .intro { font-size: 14px; }
+  .hero { padding: 34px 0 42px; }
   .directory-row { grid-template-columns: 1fr 46px; margin: 0 15px 18px; }
   .browse-button { grid-row: 2; grid-column: 1 / -1; height: 38px; border-left: 0 !important; border-top: 1px solid #45443f !important; }
   .setup-panel > .step-label, .folder-picker { padding-left: 15px; padding-right: 15px; }

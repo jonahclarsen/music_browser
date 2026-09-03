@@ -144,12 +144,6 @@
   </header>
 
   <section class="hero">
-    <div>
-      <p class="eyebrow">YOUR WORK, IN ORDER</p>
-      <h1>Find the latest.<br /><em>Hear the whole story.</em></h1>
-      <p class="intro">Point to your music archive, choose the collections that matter, and listen through every version without leaving the browser.</p>
-    </div>
-
     <div class="setup-panel">
       <div class="step-label"><span>01</span> CHOOSE A DIRECTORY</div>
       <div class="directory-row">
