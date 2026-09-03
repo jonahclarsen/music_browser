@@ -322,7 +322,6 @@
     <section class="library-section">
       <div class="library-heading">
         <div>
-          <p class="eyebrow">LIBRARY / LATEST EXPORTS</p>
           <h2>{library.songs.length} {library.songs.length === 1 ? "song" : "songs"}</h2>
           {#if notice}<p>{notice}</p>{/if}
         </div>

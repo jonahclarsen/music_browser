@@ -41,7 +41,6 @@ main { width: min(1480px, calc(100% - 72px)); margin: 0 auto; padding-bottom: 15
 .settings-button:hover { color: var(--accent); border-color: var(--accent); }
 
 .hero { padding: 64px 2vw 72px; }
-.eyebrow { margin: 0 0 20px; color: var(--accent); font: 400 10px "JetBrains Mono", monospace; letter-spacing: .19em; }
 .setup-panel { width: 100%; background: rgba(24,24,23,.92); border: 1px solid var(--line); box-shadow: 0 34px 90px rgba(0,0,0,.22); }
 .step-label { color: #aaa8a1; font: 400 10px "JetBrains Mono", monospace; letter-spacing: .13em; }
 .step-label span { color: var(--accent); margin-right: 9px; }
@@ -81,8 +80,7 @@ main { width: min(1480px, calc(100% - 72px)); margin: 0 auto; padding-bottom: 15
 
 .library-section { border-top: 1px solid var(--line); padding: 65px 2vw 50px; }
 .library-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 45px; }
-.library-heading .eyebrow { margin-bottom: 10px; }
-.library-heading h2 { margin: 0; font-size: clamp(35px, 4vw, 58px); letter-spacing: -.045em; font-weight: 500; }
+.library-heading h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; font-weight: 550; }
 .library-heading > div > p:last-child { color: var(--muted); margin: 10px 0 0; font-size: 13px; }
 .shuffle-button { display: flex; gap: 12px; align-items: center; padding: 14px 18px; border: 1px solid #55544e; color: var(--ink); background: transparent; cursor: pointer; font: 500 10px "JetBrains Mono", monospace; letter-spacing: .12em; }
 .shuffle-button span { color: var(--accent); font-size: 17px; }
