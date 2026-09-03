@@ -347,7 +347,13 @@
         <div class="column-head"><span>SONG</span><span>LATEST VERSION</span><span>HISTORY</span><span>COLLECTION</span><span></span></div>
         <div class="song-list">
           {#each filteredSongs as song (song.id)}
-            <SongCard {song} onplay={playFromList} oncontext={showContext} />
+            <SongCard
+              {song}
+              current={$player.current?.folderId === song.folderId}
+              playing={$player.current?.folderId === song.folderId && $player.isPlaying}
+              onplay={playFromList}
+              oncontext={showContext}
+            />
           {/each}
         </div>
         {#if !filteredSongs.length}<div class="empty-filter">No songs match “{search}”.</div>{/if}

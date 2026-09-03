@@ -41,8 +41,9 @@ Songs are listed by the modification time of their latest export, newest first. 
 
 ## Playback
 
-- Click summary text to play the latest version.
-- Click the surrounding card to expand its version history.
+- Click anywhere on a card to play its latest version.
+- Click the card's wide arrow control to expand its version history.
+- The current song is marked in the list; its indicator animates while playback is active.
 - Right-click a card or version for Finder and queue actions.
 - **Shuffle All** uses an unbiased Fisher–Yates shuffle backed by `crypto.getRandomValues`, with one entry per song.
 - Playback passes through a lightweight Web Audio gain and dynamics chain. It lifts quiet demos and constrains mastered tracks in real time, avoiding slow preprocessing and duplicate normalized files.

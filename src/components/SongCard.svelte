@@ -5,12 +5,19 @@
   export let song: Song;
   export let onplay: (track: PlayerTrack) => void;
   export let oncontext: (event: MouseEvent, track: PlayerTrack, folderId?: string) => void;
+  export let current = false;
+  export let playing = false;
 
   let expanded = false;
 
   function play(event: MouseEvent, version: SongVersion): void {
     event.stopPropagation();
     onplay(makeTrack(song, version));
+  }
+
+  function toggleExpanded(event: MouseEvent): void {
+    event.stopPropagation();
+    expanded = !expanded;
   }
 
   function versionContext(event: MouseEvent, version: SongVersion): void {
@@ -25,29 +32,35 @@
   }
 </script>
 
-<article class:expanded class="song-card" on:contextmenu={cardContext}>
+<article class:current class:expanded class="song-card" on:contextmenu={cardContext}>
   <button
-    class="card-toggle"
+    class="card-play"
     type="button"
-    aria-label={expanded ? `Collapse ${song.name}` : `Show every version of ${song.name}`}
-    aria-expanded={expanded}
-    on:click={() => (expanded = !expanded)}
+    aria-label={`Play latest version of ${song.name}`}
+    on:click={(event) => play(event, song.latest)}
   ></button>
 
   <div class="song-summary">
-    <button class="text-action song-name" type="button" title="Play latest" on:click={(event) => play(event, song.latest)}>
-      {song.name}
+    <span class="song-title">
+      {#if current}
+        <span class:active={playing} class="row-playing-indicator" aria-label={playing ? "Now playing" : "Current song"} title={playing ? "Now playing" : "Current song is paused"}>
+          <i></i><i></i><i></i>
+        </span>
+      {/if}
+      <span class="song-name">{song.name}</span>
+    </span>
+    <span class="latest-file">{song.latest.filename}</span>
+    <span class="count">{song.versions.length} {song.versions.length === 1 ? "version" : "versions"}</span>
+    <span class="parent">{song.parentFolder}</span>
+    <button
+      class="expand-button"
+      type="button"
+      aria-label={expanded ? `Collapse ${song.name}` : `Show every version of ${song.name}`}
+      aria-expanded={expanded}
+      on:click={toggleExpanded}
+    >
+      <span class="chevron" aria-hidden="true">⌄</span>
     </button>
-    <button class="text-action latest-file" type="button" title="Play latest" on:click={(event) => play(event, song.latest)}>
-      {song.latest.filename}
-    </button>
-    <button class="text-action count" type="button" title="Play latest" on:click={(event) => play(event, song.latest)}>
-      {song.versions.length} {song.versions.length === 1 ? "version" : "versions"}
-    </button>
-    <button class="text-action parent" type="button" title="Play latest" on:click={(event) => play(event, song.latest)}>
-      {song.parentFolder}
-    </button>
-    <span class="chevron" aria-hidden="true">⌄</span>
   </div>
 
   {#if expanded}
@@ -71,4 +84,3 @@
     </div>
   {/if}
 </article>
-
