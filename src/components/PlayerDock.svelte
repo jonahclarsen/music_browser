@@ -179,9 +179,14 @@
             <strong>{item.songName}</strong>
             <small>{item.filename}</small>
           </button>
-          {#if index !== $player.currentIndex}
-            <button class="queue-remove" type="button" aria-label={`Remove ${item.songName} from queue`} on:click={() => removeQueueItem(index)}>×</button>
-          {/if}
+          <button
+            class:hidden={index === $player.currentIndex}
+            class="queue-remove"
+            type="button"
+            disabled={index === $player.currentIndex}
+            aria-label={`Remove ${item.songName} from queue`}
+            on:click={() => removeQueueItem(index)}
+          >×</button>
         </div>
       {/each}
     </div>

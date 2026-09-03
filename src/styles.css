@@ -231,6 +231,7 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
 .queue-track small { color: var(--dim); font: 400 10px var(--font-mono); }
 .queue-row.current .queue-track > span, .queue-row.current .queue-track strong { color: var(--accent); }
 .queue-remove { padding: 8px 11px; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 18px; }
+.queue-remove.hidden { visibility: hidden; }
 .queue-remove:hover { color: var(--danger); }
 
 @media (max-width: 1120px) {
