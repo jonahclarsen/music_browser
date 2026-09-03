@@ -103,6 +103,10 @@ function newestFirst(a: SongVersion, b: SongVersion): number {
   );
 }
 
+function isInstrumental(version: SongVersion): boolean {
+  return version.filename.toLocaleLowerCase().includes("instrumental");
+}
+
 export async function scanLibrary(directory: string, includedFolders: string[]): Promise<LibraryResult> {
   const root = await assertDirectory(directory);
   const available = await fs.readdir(root, { withFileTypes: true });
@@ -144,7 +148,7 @@ export async function scanLibrary(directory: string, includedFolders: string[]):
         parentFolder: parentName,
         folderId,
         date,
-        latest: versions[0],
+        latest: versions.find((version) => !isInstrumental(version)) ?? versions[0],
         versions,
       };
       songs.push(song);
@@ -153,7 +157,7 @@ export async function scanLibrary(directory: string, includedFolders: string[]):
 
   songs.sort(
     (a, b) =>
-      b.latest.modifiedAt - a.latest.modifiedAt ||
+      b.versions[0].modifiedAt - a.versions[0].modifiedAt ||
       a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }),
   );
   const result = { directory: root, songs, scannedProjectCount };

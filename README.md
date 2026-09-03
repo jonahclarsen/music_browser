@@ -37,7 +37,7 @@ Each direct child of a selected collection is treated as one song project. Audio
 
 Versions are ordered by version number. Files with the same version are ordered by modification date. The song title comes from its project folder, with a trailing ` Project` removed.
 
-Songs are listed by the modification time of their latest export, newest first. Their displayed date is the oldest root-level Ableton `.als` file date, or the oldest audio-version date when no root `.als` exists. **Random Order** temporarily gives the visible list a random order and restores newest-first order when switched off.
+Songs are listed by the modification time of their newest export, newest first. The selected latest version skips filenames containing `instrumental` when a non-instrumental export is available, without affecting that list order. A song's displayed date is the oldest root-level Ableton `.als` file date, or the oldest audio-version date when no root `.als` exists. **Random Order** temporarily gives the visible list a random order and restores newest-first order when switched off.
 
 ## Playback
 

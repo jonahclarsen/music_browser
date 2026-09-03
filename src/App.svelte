@@ -259,13 +259,18 @@
           queue.push(track);
           if (index === saved.player.currentIndex) currentIndex = queue.length - 1;
         });
+        const restoredCurrentIndex = currentIndex < 0 ? Math.min(saved.player.currentIndex, queue.length - 1) : currentIndex;
         restorePlayer(
           queue,
-          currentIndex < 0 ? Math.min(saved.player.currentIndex, queue.length - 1) : currentIndex,
+          restoredCurrentIndex,
           saved.player.isPlaying,
           saved.player.playlistVisible,
           saved.player.position,
         );
+        const restoredTrack = get(player).current;
+        if (saved.player.isPlaying && restoredTrack) {
+          await locateSong(restoredTrack.folderId);
+        }
       }
     }
     sessionReady = true;

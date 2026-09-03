@@ -62,6 +62,35 @@ describe("library scanner", () => {
     expect(result.songs.map(({ name }) => name)).toEqual(["Signal Bloom", "Glass Houses"]);
   });
 
+  it("skips instrumental exports when choosing latest without changing song sort order", async () => {
+    const root = await fixture();
+    const current = path.join(root, "Current");
+    const exportsDirectory = path.join(current, "Glass Houses Project", "Exports");
+    const olderMix = path.join(exportsDirectory, "Glass Houses v1.0.mp3");
+    const middleInstrumental = path.join(exportsDirectory, "Glass Houses INSTRUMENTAL v2.0.mp3");
+    const newestInstrumental = path.join(exportsDirectory, "Glass Houses instrumental v3.0.mp3");
+    const signalExport = path.join(current, "Signal Bloom Project", "Signal Bloom v2.0.mp3");
+    await mkdir(path.dirname(signalExport), { recursive: true });
+    await writeFile(olderMix, "audio");
+    await writeFile(middleInstrumental, "audio");
+    await writeFile(newestInstrumental, "audio");
+    await writeFile(signalExport, "audio");
+    await utimes(olderMix, new Date(1_000), new Date(1_000));
+    await utimes(middleInstrumental, new Date(2_500), new Date(2_500));
+    await utimes(newestInstrumental, new Date(3_000), new Date(3_000));
+    await utimes(signalExport, new Date(2_000), new Date(2_000));
+
+    const result = await scanLibrary(root, ["Current"]);
+    const glassHouses = result.songs.find(({ name }) => name === "Glass Houses")!;
+    expect(glassHouses.latest.filename).toBe("Glass Houses v1.0.mp3");
+    expect(glassHouses.versions.map(({ filename }) => filename)).toEqual([
+      "Glass Houses instrumental v3.0.mp3",
+      "Glass Houses INSTRUMENTAL v2.0.mp3",
+      "Glass Houses v1.0.mp3",
+    ]);
+    expect(result.songs.map(({ name }) => name)).toEqual(["Glass Houses", "Signal Bloom"]);
+  });
+
   it("uses the oldest root Ableton file as the song date, falling back to the oldest audio version", async () => {
     const root = await fixture();
     const project = path.join(root, "Current", "Glass Houses Project");
