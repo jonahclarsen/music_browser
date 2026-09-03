@@ -319,7 +319,7 @@
   });
 </script>
 
-<svelte:head><title>{library ? `${library.songs.length} songs · Music Browser` : "Music Browser"}</title></svelte:head>
+<svelte:head><title>Music Browser</title></svelte:head>
 <svelte:window on:keydown={handleWindowKeydown} on:pointerdown={handleWindowPointerDown} on:pointerup={stopPreview} on:blur={stopPreview} />
 
 {#snippet directorySettings()}
