@@ -85,7 +85,7 @@ main { width: min(1720px, calc(100% - 44px)); height: calc(100% - 108px); margin
 .folder-head > div { display: flex; align-items: center; }
 .folder-head button { border: 0; background: none; color: var(--dim); font: 500 10px/1 var(--font-mono); letter-spacing: .1em; cursor: pointer; padding: 4px 0 4px 14px; }
 .folder-head button:hover { color: var(--accent); }
-.folder-grid { max-height: 132px; overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-right: 4px; }
+.folder-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .folder-check { min-width: 0; display: flex; gap: 10px; align-items: center; background: var(--field); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 10px; cursor: pointer; color: var(--text); font-size: 13px; }
 .folder-check:hover { border-color: var(--line-strong); color: var(--ink); }
 .folder-check > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
