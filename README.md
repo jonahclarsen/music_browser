@@ -16,7 +16,7 @@ start the development app from any Bash or Zsh directory with:
 music_browser
 ```
 
-The command starts the TypeScript server with live reload and opens [http://localhost:5173](http://localhost:5173). Press `Ctrl+C` in the terminal to stop it.
+The command starts the TypeScript server with live reload and opens [http://localhost:53038](http://localhost:53038). Press `Ctrl+C` in the terminal to stop it.
 
 ## Expected folder layout
 
@@ -37,7 +37,7 @@ Each direct child of a selected collection is treated as one song project. Audio
 
 Versions are ordered by version number. Files with the same version are ordered by modification date. The song title comes from its project folder, with a trailing ` Project` removed.
 
-Songs are listed by the modification time of their newest export, newest first. The selected latest version skips filenames containing `instrumental` when a non-instrumental export is available, without affecting that list order. A song's displayed date is the oldest root-level Ableton `.als` file date, or the oldest audio-version date when no root `.als` exists. **Random Order** temporarily gives the visible list a random order and restores newest-first order when switched off.
+Songs are listed by the modification time of their newest export, newest first. The selected latest version skips filenames containing `instrumental` when a non-instrumental export is available, without affecting that list order. **First Date** is the oldest root-level Ableton `.als` file date, or the oldest audio-version date when no root `.als` exists; **Latest Date** is the selected latest export's modification date. **Random Order** temporarily gives the visible list a random order and restores newest-first order when switched off. Favorite songs and the optional favorites-only view are saved in local storage.
 
 ## Playback
 
@@ -50,6 +50,7 @@ Songs are listed by the modification time of their newest export, newest first. 
 - Playback passes through a lightweight Web Audio gain and dynamics chain. It lifts quiet demos and constrains mastered tracks in real time, avoiding slow preprocessing and duplicate normalized files.
 - Returning to a track within ten seconds resumes the position where it was left.
 - Click the current song or filename in the bottom player to center and briefly highlight its list row.
+- Press Space to play or pause, Left Arrow for the previous track, and Right Arrow for the next track, regardless of which control has keyboard focus.
 - Recent scans are reused for five minutes when the root's immediate folder set and selected collections have not changed. List order, queue order, current track, playback position, playing/paused state, and volume are restored from local storage.
 
 ## Interface

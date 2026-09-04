@@ -30,6 +30,14 @@
     return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(timestamp);
   }
 
+  function isSameDate(first: number, second: number): boolean {
+    const firstDate = new Date(first);
+    const secondDate = new Date(second);
+    return firstDate.getFullYear() === secondDate.getFullYear()
+      && firstDate.getMonth() === secondDate.getMonth()
+      && firstDate.getDate() === secondDate.getDate();
+  }
+
   function setupAudioGraph(): void {
     if (audioContext || !audio || !previewAudio) return;
     audioContext = new AudioContext();
@@ -71,6 +79,20 @@
     } else {
       setPlaying(true);
       if (!$preview) void playMain();
+    }
+  }
+
+  function handlePlaybackKeydown(event: KeyboardEvent): void {
+    if (event.metaKey || event.ctrlKey || event.altKey || event.isComposing || event.repeat) return;
+    if (event.code === "Space") {
+      event.preventDefault();
+      togglePlay();
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      if ($player.currentIndex > 0) moveQueue(-1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      if ($player.currentIndex >= 0 && $player.currentIndex < $player.queue.length - 1) moveQueue(1);
     }
   }
 
@@ -158,8 +180,10 @@
       else void audioContext?.resume();
     };
     window.addEventListener("pointerdown", resume);
+    window.addEventListener("keydown", handlePlaybackKeydown, { capture: true });
     return () => {
       window.removeEventListener("pointerdown", resume);
+      window.removeEventListener("keydown", handlePlaybackKeydown, { capture: true });
       void audioContext?.close();
     };
   });
@@ -203,7 +227,12 @@
       <button type="button" class="now-playing-copy" on:click={() => onlocate($player.current!.folderId)} on:contextmenu={showPlayerContext} title="Find this song in the list">
         <strong>{$player.current.songName}</strong>
         <span>{$player.current.filename}</span>
-        <time datetime={new Date($player.current.songDate).toISOString()}>{formatDate($player.current.songDate)}</time>
+        <span class="now-playing-dates">
+          <time datetime={new Date($player.current.songDate).toISOString()}>{formatDate($player.current.songDate)}</time>
+          {#if !isSameDate($player.current.songDate, $player.current.modifiedAt)}
+            <span aria-hidden="true"> - </span><time datetime={new Date($player.current.modifiedAt).toISOString()}>{formatDate($player.current.modifiedAt)}</time>
+          {/if}
+        </span>
       </button>
     {/if}
   </div>

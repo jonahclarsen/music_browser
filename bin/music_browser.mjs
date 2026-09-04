@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const port = process.env.PORT ?? "5173";
+const port = process.env.PORT ?? "53038";
 const address = `http://localhost:${port}`;
 const child = spawn("pnpm", ["dev"], {
   cwd: projectRoot,
@@ -37,4 +37,3 @@ child.on("exit", (code, signal) => {
   if (signal) console.log(`Music Browser stopped (${signal}).`);
   process.exitCode = code ?? 0;
 });
-

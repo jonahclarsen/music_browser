@@ -8,7 +8,7 @@ import { folderRegistry, listParentFolders, mediaRegistry, scanLibrary } from ".
 
 const runFile = promisify(execFile);
 const app = express();
-const port = Number(process.env.PORT ?? 5173);
+const port = Number(process.env.PORT ?? 53038);
 const isProduction = process.env.NODE_ENV === "production";
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -135,4 +135,3 @@ app.use((error: unknown, _request: express.Request, response: express.Response, 
 app.listen(port, "127.0.0.1", () => {
   console.log(`Music Browser is ready at http://localhost:${port}`);
 });
-

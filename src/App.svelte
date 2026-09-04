@@ -32,6 +32,7 @@
   }
 
   const SESSION_KEY = "music-browser-session-v1";
+  const FAVORITES_KEY = "music-browser-favorites-v1";
 
   let directory = "";
   let folders: ParentFolder[] = [];
@@ -52,6 +53,8 @@
   let saveTimer: number | undefined;
   let highlightTimer: number | undefined;
   let highlightedSongId = "";
+  let favoriteSongIds = new Set<string>();
+  let favoritesOnly = false;
 
   $: orderedSongs = randomOrder && library
     ? randomSongIds.map((id) => library!.songs.find((song) => song.id === id)).filter((song): song is Song => Boolean(song))
@@ -60,6 +63,7 @@
   $: filteredSongs = orderedSongs.filter((song) => {
     const query = search.trim().toLocaleLowerCase();
     return visibleFolders.has(song.parentFolder)
+      && (!favoritesOnly || favoriteSongIds.has(song.id))
       && (!query || `${song.name} ${song.latest.filename} ${song.parentFolder}`.toLocaleLowerCase().includes(query));
   });
 
@@ -177,6 +181,27 @@
     else next.add(name);
     visibleFolders = next;
     writeSession();
+  }
+
+  function readFavorites(): Set<string> {
+    try {
+      const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]");
+      return new Set(Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function toggleFavorite(songId: string): void {
+    const next = new Set(favoriteSongIds);
+    if (next.has(songId)) next.delete(songId);
+    else next.add(songId);
+    favoriteSongIds = next;
+    try {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify([...next]));
+    } catch {
+      // Favorites still work for this session when storage is unavailable.
+    }
   }
 
   function showContext(event: MouseEvent, track: PlayerTrack, folderId?: string, showQueueActions = true): void {
@@ -305,6 +330,7 @@
 
   onMount(() => {
     document.documentElement.dataset.theme = "frost";
+    favoriteSongIds = readFavorites();
     const unsubscribe = player.subscribe(scheduleSessionWrite);
     const persistNow = () => writeSession();
     window.addEventListener("pagehide", persistNow);
@@ -398,6 +424,7 @@
         <label class="search-box">
           <svg class="icon-search" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.9" cy="6.9" r="4.6" /><path d="m10.3 10.3 3.5 3.5" /></svg>
           <input bind:value={search} placeholder="Filter songs, files, folders…" />
+          {#if search}<button class="clear-search" type="button" aria-label="Clear filter" on:click={() => (search = "")}>×</button>{/if}
         </label>
         <div class="list-actions">
           <div class="folder-filters" role="group" aria-label="Folders shown in song list">
@@ -412,6 +439,9 @@
           <button class:active={randomOrder} class="random-order-button" type="button" aria-pressed={randomOrder} on:click={toggleRandomOrder}>
             <span>{randomOrder ? "✓" : ""}</span> RANDOM ORDER
           </button>
+          <button class:active={favoritesOnly} class="favorites-filter-button" type="button" aria-pressed={favoritesOnly} on:click={() => (favoritesOnly = !favoritesOnly)}>
+            <span aria-hidden="true">{favoritesOnly ? "★" : "☆"}</span> FAVORITES
+          </button>
           <button class="shuffle-button" type="button" disabled={!library.songs.length} on:click={shuffle}>
             <svg class="icon-shuffle" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h2.7l7.6 9h2.7M1.5 12.5h2.7l7.6-9h2.7" /><path d="M12.3 1.6 14.5 3.5l-2.2 1.9M12.3 10.6l2.2 1.9-2.2 1.9" /></svg>
             SHUFFLE ALL
@@ -420,7 +450,7 @@
       </div>
 
       {#if library.songs.length}
-        <div class="column-head"><span>TITLE</span><span>LATEST VERSION</span><span>DATE</span><span>VERSION COUNT</span><span>STATUS</span><span></span></div>
+        <div class="column-head"><span>TITLE</span><span>FIRST DATE</span><span>LATEST VERSION</span><span>LATEST DATE</span><span>VERSION COUNT</span><span>STATUS</span><span></span></div>
         <div class="song-list">
           {#each filteredSongs as song (song.id)}
             <SongCard
@@ -428,7 +458,9 @@
               current={$player.current?.folderId === song.folderId}
               playing={$player.current?.folderId === song.folderId && $player.isPlaying}
               highlighted={highlightedSongId === song.id}
+              favorited={favoriteSongIds.has(song.id)}
               onplay={playFromList}
+              ontogglefavorite={toggleFavorite}
               onpreviewstart={startPreview}
               onpreviewend={stopPreview}
               oncontext={showContext}
@@ -437,7 +469,7 @@
         </div>
         {#if !filteredSongs.length}
           <div class="empty-filter">
-            {search.trim() ? `No songs match “${search}”.` : "No songs match the selected folders."}
+            {search.trim() ? `No songs match “${search}”.` : favoritesOnly ? "No favorite songs match the selected folders." : "No songs match the selected folders."}
           </div>
         {/if}
       {:else}

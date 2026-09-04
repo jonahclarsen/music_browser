@@ -4,12 +4,14 @@
 
   export let song: Song;
   export let onplay: (track: PlayerTrack) => void;
+  export let ontogglefavorite: (songId: string) => void;
   export let onpreviewstart: (track: PlayerTrack) => void;
   export let onpreviewend: () => void;
   export let oncontext: (event: MouseEvent, track: PlayerTrack, folderId?: string) => void;
   export let current = false;
   export let playing = false;
   export let highlighted = false;
+  export let favorited = false;
 
   let expanded = false;
 
@@ -21,6 +23,11 @@
   function toggleExpanded(event: MouseEvent): void {
     event.stopPropagation();
     expanded = !expanded;
+  }
+
+  function toggleFavorite(event: MouseEvent): void {
+    event.stopPropagation();
+    ontogglefavorite(song.id);
   }
 
   function versionContext(event: MouseEvent, version: SongVersion): void {
@@ -67,6 +74,15 @@
       {/if}
       <span class="song-name">{song.name}</span>
       <button
+        class:active={favorited}
+        class="favorite-button"
+        type="button"
+        aria-label={favorited ? `Remove ${song.name} from favorites` : `Add ${song.name} to favorites`}
+        aria-pressed={favorited}
+        title={favorited ? "Remove from favorites" : "Add to favorites"}
+        on:click={toggleFavorite}
+      >{favorited ? "★" : "☆"}</button>
+      <button
         class="preview-button"
         type="button"
         aria-label={`Hold to preview ${song.name}`}
@@ -78,8 +94,9 @@
         on:click={(event) => event.stopPropagation()}
       >PREVIEW</button>
     </span>
+    <time class="song-date first-date" datetime={new Date(song.date).toISOString()}>{formatDate(song.date)}</time>
     <span class="latest-file">{song.latest.filename}</span>
-    <time class="song-date" datetime={new Date(song.date).toISOString()}>{formatDate(song.date)}</time>
+    <time class="song-date latest-date" datetime={new Date(song.latest.modifiedAt).toISOString()}>{formatDate(song.latest.modifiedAt)}</time>
     <span class="count">{song.versions.length} {song.versions.length === 1 ? "version" : "versions"}</span>
     <span class="parent">{song.parentFolder}</span>
     <button
