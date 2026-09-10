@@ -64,15 +64,10 @@
   let shareMessage = "";
   let sharedUrl = "";
   let sharedLinksRevision = 0;
-  let activeTab: "library" | "shares" = "library";
+  let sharedLinksDialog: HTMLDialogElement;
+  let sharedLinksOpen = false;
   let shareProgress: ShareProgress = { phase: "checking", bytes: 0, total: 0, version: 0, versions: 0 };
   $: sharePercent = shareProgress.total ? Math.min(99, Math.floor(shareProgress.bytes / shareProgress.total * 100)) : 0;
-
-  function selectTab(tab: "library" | "shares"): void {
-    activeTab = tab;
-    settingsOpen = false;
-    try { localStorage.setItem("music-browser-tab", tab); } catch { /* Tabs still work without storage. */ }
-  }
 
   function toggleExpanded(songId: string): void {
     expandedSongId = expandedSongId === songId ? "" : songId;
@@ -283,10 +278,12 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent): void {
+    if (sharedLinksDialog?.open) return;
     if (settingsOpen && event.key === "Escape") settingsOpen = false;
   }
 
   function handleWindowPointerDown(event: PointerEvent): void {
+    if (sharedLinksDialog?.open) return;
     if (!settingsOpen || !(event.target instanceof Element)) return;
     if (event.target.closest(".site-header, .settings-drawer")) return;
     settingsOpen = false;
@@ -295,7 +292,7 @@
   async function locateSong(folderId: string): Promise<void> {
     const song = library?.songs.find((item) => item.folderId === folderId);
     if (!song) return;
-    selectTab("library");
+    settingsOpen = false;
     search = "";
     if (!visibleFolders.has(song.parentFolder)) {
       visibleFolders = new Set(visibleFolders).add(song.parentFolder);
@@ -393,10 +390,8 @@
         const restoredTrack = get(player).current;
         if (saved.player.isPlaying && restoredTrack) {
           const restoredExpansion = expandedSongId;
-          const restoredTab = activeTab;
           await locateSong(restoredTrack.folderId);
           expandedSongId = restoredExpansion;
-          selectTab(restoredTab);
         }
       }
     }
@@ -407,7 +402,6 @@
   onMount(() => {
     document.documentElement.dataset.theme = "frost";
     favoriteSongIds = readFavorites();
-    try { activeTab = localStorage.getItem("music-browser-tab") === "shares" ? "shares" : "library"; } catch { /* Use Library by default. */ }
     const unsubscribe = player.subscribe(scheduleSessionWrite);
     const persistNow = () => writeSession();
     window.addEventListener("pagehide", persistNow);
@@ -467,20 +461,12 @@
     <a class="brand" href="/" aria-label="Music Browser home">
       <span>Music Browser</span>
     </a>
-    {#if library && activeTab === "library"}
       <button class:active={settingsOpen} class="settings-button" type="button" aria-expanded={settingsOpen} on:click={() => (settingsOpen = !settingsOpen)}>
         <svg class="icon-gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.2h12.4M1.8 10.8h12.4" /><circle cx="5.6" cy="5.2" r="1.9" /><circle cx="10.4" cy="10.8" r="1.9" /></svg>
         SETTINGS
       </button>
-    {/if}
   </header>
-  <nav class="app-tabs" aria-label="Browser sections">
-    <button type="button" class:active={activeTab === "library"} aria-pressed={activeTab === "library"} on:click={() => selectTab("library")}>Library</button>
-    <button type="button" class:active={activeTab === "shares"} aria-pressed={activeTab === "shares"} on:click={() => selectTab("shares")}>Shared links</button>
-  </nav>
-
-  {#if library}
-    <div class:open={settingsOpen} class="settings-drawer" aria-hidden={!settingsOpen}>
+    <div class:open={settingsOpen} class="settings-drawer" inert={!settingsOpen}>
       <div class="settings-drawer-inner">
         <section class="settings-panel" aria-labelledby="settings-title">
           <header>
@@ -488,20 +474,19 @@
             <button type="button" aria-label="Close settings" on:click={() => (settingsOpen = false)}>×</button>
           </header>
           <div class="settings-content">
-            {@render directorySettings()}
+            {#if library}{@render directorySettings()}{/if}
+            <div class="settings-sharing"><button class="settings-button" type="button" on:click={() => { sharedLinksOpen = true; sharedLinksDialog.showModal(); }}>Manage shared links</button></div>
           </div>
         </section>
       </div>
     </div>
-  {/if}
 
-  {#if !library && activeTab === "library"}<section class="hero">{@render directorySettings()}</section>{/if}
+  {#if !library}<section class="hero">{@render directorySettings()}</section>{/if}
 
   {#if error}<div class="message error-message" role="alert"><span>!</span>{error}<button type="button" on:click={() => (error = "")}>×</button></div>{/if}
 
-  {#if activeTab === "shares"}{#key sharedLinksRevision}<SharedLinks oncopy={copySharedLink} />{/key}{/if}
 
-  {#if library && activeTab === "library"}
+  {#if library}
     <section class="library-section" aria-label="Song library">
       <div class="list-tools">
         <label class="search-box">
@@ -563,6 +548,14 @@
     </section>
   {/if}
 </main>
+
+<dialog bind:this={sharedLinksDialog} class="shared-links-modal" aria-label="Shared links" on:click={(event) => { if (event.target === sharedLinksDialog) sharedLinksDialog.close(); }} on:close={() => (sharedLinksOpen = false)}>
+  <div class="shared-links-modal-content">
+    <button class="modal-close" type="button" aria-label="Close shared links" on:click={() => sharedLinksDialog.close()}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" /></svg></button>
+    {#if sharedLinksOpen}{#key sharedLinksRevision}<SharedLinks oncopy={copySharedLink} />{/key}{/if}
+    {#if shareMessage && !sharing}<p role="status">Link {shareMessage}</p>{/if}
+  </div>
+</dialog>
 
 {#if menu}
   <ContextMenu

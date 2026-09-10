@@ -85,6 +85,7 @@
   }
 
   function handlePlaybackKeydown(event: KeyboardEvent): void {
+    if (document.querySelector("dialog[open]")) return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.isComposing || event.repeat) return;
     if (event.code === "Space") {
       event.preventDefault();

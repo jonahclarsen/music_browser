@@ -37,7 +37,7 @@ function fixture() {
 }
 const song = { title: '<script>alert("x")</script>', latest: 1, versions: [
   { label: "Old v1.0.mp3", size: 5, contentType: "audio/mpeg" },
-  { label: "Latest v2.0.wav", size: 6, contentType: "audio/wav" },
+  { modifiedAt: Date.UTC(2026, 8, 10), label: "Latest v2.0.wav", size: 6, contentType: "audio/wav" },
 ] };
 
 describe("sharing worker", () => {
@@ -62,12 +62,23 @@ describe("sharing worker", () => {
     expect(html).not.toContain("<details open");
     expect(html).not.toContain("autoplay");
     expect(html).toContain("JONAH SHARED WITH YOU");
-    expect(html).not.toContain("<svg");
-    expect(html).not.toContain("<footer");
-    expect(html).not.toContain("Latest version");
-    expect(html).not.toContain("border-top");
+    expect(html).toContain('aria-label="Play"');
+    expect(html).toContain('<footer aria-label="Song player">');
+    expect(html).toContain("Latest version");
+    expect(html).toContain('src="/player.js"');
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain('datetime="2026-09-10T00:00:00.000Z"');
+    expect(html).toContain("Date unavailable");
+    expect(page.headers.get("Content-Security-Policy")).toContain("script-src 'self'");
+    const script = await call("/player.js");
+    expect(script.headers.get("Content-Type")).toContain("text/javascript");
+    expect(await script.text()).toContain("audio.currentTime = Number(seek.value)");
+    const match = await call("/api/shares/find", "POST", JSON.stringify({ filenames: song.versions.map(v => v.label), dates: [Date.UTC(2025, 0, 1), Date.UTC(2026, 0, 1)] }), true);
+    expect((await match.json() as { id: string }).id).toBe(id);
+    const updated = await (await call(`/${id}`)).text();
+    expect(updated).toContain('datetime="2025-01-01T00:00:00.000Z"');
+    expect(updated).toContain('datetime="2026-09-10T00:00:00.000Z"');
     expect(page.headers.get("X-Robots-Tag")).toContain("noindex");
     expect(await (await call(`/${id}?version=0`)).text()).toContain(`src="/${id}/audio/0"`);
     expect(await (await call(`/${id}?version=-2`)).text()).toContain(`src="/${id}/audio/1"`);

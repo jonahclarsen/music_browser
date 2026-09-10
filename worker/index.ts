@@ -1,3 +1,4 @@
+import { playerPage, playerScript } from "./player-page";
 import { filenameSignature, type SharedLinksPage, type SharedLink } from "../src/lib/sharing";
 import type { R2Bucket } from "@cloudflare/workers-types";
 
@@ -8,7 +9,7 @@ const securityHeaders = {
   "Referrer-Policy": "no-referrer",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
   "Cache-Control": "no-store",
-  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; media-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; media-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
 };
 function reply(body: string, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(body, { status, headers: { ...securityHeaders, ...headers } });
@@ -44,13 +45,7 @@ export interface SharedSong {
   createdAt?: string;
   expiresAt?: string;
   latest: number;
-  versions: { label: string; size: number; contentType: "audio/mpeg" | "audio/wav" }[];
-}
-function playerPage(song: SharedSong, id: string, selected: number): string {
-  const older = song.versions.map((version, index) => `<a href="/${id}?version=${index}" ${index === selected ? 'aria-current="true"' : ''}>${escapeHtml(version.label)}${index === selected ? " (selected)" : ""}</a>`).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(song.title)}</title><style>
-  *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px;background:#eef2f5;color:#25313c;font-family:"Avenir Next",system-ui,sans-serif}main{width:min(100%,560px);padding:clamp(24px,6vw,48px);background:#ffffffc9;border:1px solid #fff;border-radius:24px;box-shadow:0 24px 80px #24334112}p{font-size:11px;letter-spacing:.16em;color:#6a7d87;margin:0 0 12px}h1{font-size:clamp(26px,6vw,38px);line-height:1.2;overflow-wrap:anywhere;margin:0 0 12px;font-weight:600}audio{width:100%;display:block;margin-top:24px}.version{font-size:13px;overflow-wrap:anywhere;color:#6a7d87}details{margin-top:28px}summary{cursor:pointer;font-size:14px}nav{display:grid;gap:6px;margin-top:12px;max-height:280px;overflow:auto}a{color:#396f86;text-decoration:none;padding:10px;border-radius:8px;font-size:14px;overflow-wrap:anywhere}a:hover,a[aria-current]{background:#e0edf3}
-  </style></head><body><main><p>JONAH SHARED WITH YOU</p><h1>${escapeHtml(song.title)}</h1><div class="version">${escapeHtml(song.versions[selected].label)}</div><audio controls preload="metadata" src="/${id}/audio/${selected}">Your browser does not support audio playback.</audio>${song.versions.length > 1 ? `<details><summary>Explore all ${song.versions.length} versions</summary><nav aria-label="Song versions">${older}</nav></details>` : ""}</main></body></html>`;
+  versions: { modifiedAt?: number; label: string; size: number; contentType: "audio/mpeg" | "audio/wav" }[];
 }
 export function validSong(value: unknown): value is SharedSong {
   if (!value || typeof value !== "object") return false;
@@ -59,6 +54,7 @@ export function validSong(value: unknown): value is SharedSong {
     && Array.isArray(song.versions) && song.versions.length > 0 && song.versions.length <= 200
     && Number.isInteger(song.latest) && song.latest >= 0 && song.latest < song.versions.length
     && song.versions.every(v => v && typeof v.label === "string" && v.label.length > 0 && v.label.length <= 300
+      && (v.modifiedAt === undefined || (Number.isFinite(v.modifiedAt) && Math.abs(v.modifiedAt) <= 8.64e15))
       && Number.isSafeInteger(v.size) && v.size > 0 && v.size <= MAX_BYTES && ["audio/mpeg", "audio/wav"].includes(v.contentType));
 }
 function isExpired(song: SharedSong): boolean {
@@ -112,14 +108,32 @@ export default {
   },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === "/player.js" && ["GET", "HEAD"].includes(request.method)) return reply(request.method === "HEAD" ? "" : playerScript, 200, { "Content-Type": "text/javascript; charset=utf-8" });
     if (url.pathname.startsWith("/api/")) {
       if (!env.UPLOAD_TOKEN || request.headers.get("Authorization") !== `Bearer ${env.UPLOAD_TOKEN}`) return json({ error: "Unauthorized" }, 401);
       if (url.pathname === "/api/shares" && request.method === "GET") return json(await sharePage(env, url.origin, url.searchParams.get("cursor") ?? undefined));
       if (url.pathname === "/api/shares/find" && request.method === "POST") {
-        const body = await request.json().catch(() => null) as { filenames?: unknown } | null;
+        const body = await request.json().catch(() => null) as { filenames?: unknown; dates?: unknown } | null;
         const names = body?.filenames;
         if (!Array.isArray(names) || !names.length || names.length > 200 || !names.every(name => typeof name === "string" && name.length <= 300)) return json({ error: "Invalid filenames." }, 400);
         const found = await findShare(env, url.origin, names);
+        if (found && body?.dates !== undefined) {
+          const dates = body.dates;
+          if (!Array.isArray(dates) || dates.length !== names.length || !dates.every(date => typeof date === "number" && Number.isFinite(date) && Math.abs(date) <= 8.64e15)) return json({ error: "Invalid version dates." }, 400);
+          const manifest = await env.SONGS.get(`shares/${found.id}`);
+          if (manifest) {
+            const current = await manifest.json<SharedSong>();
+            const byName = new Map(names.map((name, index) => [name, dates[index] as number]));
+            let changed = false;
+            for (const version of current.versions) {
+              if (version.modifiedAt === undefined && byName.has(version.label)) {
+                version.modifiedAt = byName.get(version.label);
+                changed = true;
+              }
+            }
+            if (changed) await env.SONGS.put(`shares/${found.id}`, JSON.stringify(current));
+          }
+        }
         return json(found ? { id: found.id, url: found.url, reused: true } : {});
       }
       if (url.pathname === "/api/shares" && request.method === "POST") {

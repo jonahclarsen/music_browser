@@ -77,7 +77,7 @@ async function uploadSong(trackId: string, report: ProgressListener): Promise<Sh
   // Filename-only matching is intentional: do not hash or compare audio contents.
   const found = await remote<Partial<ShareResult>>("/api/shares/find", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filenames: song.versions.map(v => v.filename) }),
+    body: JSON.stringify({ filenames: song.versions.map(v => v.filename), dates: song.versions.map(v => v.modifiedAt) }),
   });
   if (found.url) return result(found);
   const files = await Promise.all(song.versions.map(async (version) => {
@@ -85,7 +85,7 @@ async function uploadSong(trackId: string, report: ProgressListener): Promise<Sh
     if (!file) throw new Error("A version is missing. Scan the library again.");
     const stat = await fs.stat(file);
     if (!stat.isFile() || stat.size === 0 || stat.size > MAX_BYTES) throw new Error(`${version.filename} cannot be shared: each version must be between 1 byte and 95 MiB.`);
-    return { file, label: version.filename, size: stat.size, contentType: version.format === "mp3" ? "audio/mpeg" : "audio/wav" };
+    return { file, label: version.filename, modifiedAt: version.modifiedAt, size: stat.size, contentType: version.format === "mp3" ? "audio/mpeg" : "audio/wav" };
   }));
   const draft = await remote<Partial<ShareResult>>("/api/shares", {
     method: "POST", headers: { "Content-Type": "application/json" },

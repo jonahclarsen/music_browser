@@ -100,10 +100,10 @@ Uploads are streamed one version at a time into a private draft. The Worker publ
 
 Only one song's version history can be expanded at a time. That selection is saved with the existing local session. Clicking the current song in the player reveals and expands it, collapsing the previous song.
 
-### Shared links tab
+### Shared links in Settings
 
-The local **Shared links** tab lists Cloudflare uploads with song titles, creation dates, sizes, version filenames, and their links. It works without scanning a library. Use **Copy link**, open a link, or **Delete** and then **Delete permanently** to revoke it and remove all uploaded audio. No local files are deleted. **Refresh** updates the list, and **Load more** retrieves additional pages.
+Open **Settings → Manage shared links** to view a modal listing Cloudflare uploads with song titles, creation dates, sizes, version filenames, and their links. It works without scanning a library. Use **Copy link**, open a link, or **Delete** and then **Delete permanently** to revoke it and remove all uploaded audio. No local files are deleted. **Refresh** updates the list, and **Load more** retrieves additional pages.
 
 Optional expiry can be set to one, seven, or thirty days from now, or removed. Expired links stop serving immediately on subsequent requests; an hourly Worker job removes their audio and retries interrupted deletions. Revoked IDs remain reserved. All listing, matching, deletion, and expiry requests use the server-held credential, and the local endpoints reject cross-origin requests. Cloudflare never connects back to the local app.
 
-The public player says **Jonah shared with you**, uses Avenir Next (with system sans-serif fallback), and keeps older versions behind the collapsed picker. The local Music Browser title uses the same font family.
+The public player has a taller single-song card with play/pause, seeking, elapsed time, duration, and volume controls along the bottom, without playlist or sharing controls. It shows the latest version date and dates in the collapsed version picker. Older links display “Date unavailable” until the song is shared again, which fills missing dates from the local library without uploading audio or changing existing dates. The public player says **Jonah shared with you**, uses Avenir Next (with system sans-serif fallback), and keeps older versions behind the collapsed picker. The local Music Browser title uses the same font family.
