@@ -13,7 +13,7 @@
   export let sharing = false;
   export let onerror: (message: string) => void;
 
-  $: left = Math.max(8, Math.min(x, window.innerWidth - 214));
+  $: left = Math.max(8, Math.min(x, window.innerWidth - 226));
   $: top = Math.max(8, Math.min(y, window.innerHeight - (showQueueActions ? 152 : 88)));
 
   async function reveal(): Promise<void> {

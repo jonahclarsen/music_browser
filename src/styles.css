@@ -258,8 +258,9 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
   .song-summary { grid-template-columns: minmax(230px, 1fr) minmax(160px, 1fr) 105px 44px; }
   .song-summary .first-date, .song-summary .count, .song-summary .parent { display: none; }
   .song-date { display: block; }
-  .player-dock { grid-template-columns: 1fr 1.25fr; }
-  .player-tools { display: none; }
+  .player-dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto; }
+  .player-tools { gap: 2px; padding-right: 12px; }
+  .volume-control { display: none; }
 }
 
 @media (max-width: 600px) {
@@ -282,7 +283,7 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
   .versions { padding-inline: 10px; }
   .version-row { grid-template-columns: 55px 1fr; padding: 8px 0; }
   .version-row time, .latest-badge { display: none; }
-  .player-dock { height: 112px; grid-template-columns: 1fr auto; padding: 8px 12px 24px; }
+  .player-dock { height: 112px; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; padding: 8px 12px 24px; }
   .now-playing { padding: 0; gap: 8px; }
   .album-mark { width: 36px; height: 36px; }
   .now-playing-copy time { display: none; }
