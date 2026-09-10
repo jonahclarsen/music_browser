@@ -55,7 +55,7 @@ Songs are listed by the modification time of their newest export, newest first. 
 
 ## Interface
 
-The Frost appearance is permanent. Interface, display, and technical text use Avenir Next, Helvetica Neue, and Roboto Mono respectively. The compact header, library controls, and player remain fixed while only the song list scrolls.
+The Graphite appearance follows system light/dark mode. Interface, display, and technical text use system sans-serif, Helvetica Neue, and Roboto Mono respectively. The compact header, library controls, and player remain fixed while only the song list scrolls.
 
 ## Development
 
@@ -106,16 +106,16 @@ Open **Settings → Manage shared links** to view a modal listing Cloudflare upl
 
 Optional expiry can be set to one, seven, or thirty days from now, or removed. Expired links stop serving immediately on subsequent requests; an hourly Worker job removes their audio and retries interrupted deletions. Revoked IDs remain reserved. All listing, matching, deletion, and expiry requests use the server-held credential, and the local endpoints reject cross-origin requests. Cloudflare never connects back to the local app.
 
-The public player has a taller single-song card with play/pause, seeking, elapsed time, duration, and volume controls along the bottom, without playlist or sharing controls. It shows the latest version date and dates in the collapsed version picker. Older links display “Date unavailable” until the song is shared again, which fills missing dates from the local library without uploading audio or changing existing dates. The public player says **Jonah shared with you**, uses Avenir Next (with system sans-serif fallback), and keeps older versions behind the collapsed picker. The local Music Browser title uses the same font family.
+The public player has a taller single-song card with play/pause, seeking, elapsed time, duration, and volume controls along the bottom, without playlist or sharing controls. It shows the latest version date and dates in the collapsed version picker. Older links display “Date unavailable” until the song is shared again, which fills missing dates from the local library without uploading audio or changing existing dates. The public player says **Jonah shared with you**, uses system sans-serif, and keeps older versions behind the collapsed picker. The local Music Browser title uses the same font family.
 
 Both players use the shared `public/waveform.js` and `public/waveform.css` seek control, modeled on the DJ page in `../jonah.art`. It decodes the selected audio at 8 kHz in the browser, includes all channels, and caches compact peaks for the last eight tracks. Click or drag to seek, hover to preview a timestamp, or focus the waveform and use the arrow keys. A baseline stays seekable while loading or if decoding fails. The Worker serves these assets and the same Roboto Mono time font as the local app from `public/`.
 
 ### Shared player appearance
 
-The shared player uses an iridescent pink, violet, aqua, and gold theme inspired by Trilly and Balance. System light/dark mode controls its layered background, card, controls, and waveform. The default layout uses the selected 733.7px card width, 441.1px minimum height, 32.4px song padding, 12px play-to-waveform gap, 21px corners, 2px border, and system sans-serif typography with Roboto Mono timestamps. Theme defaults live in `worker/player-theme.json`; the gradient surfaces are defined in `worker/player-theme.ts`.
+The shared player uses Balance’s Graphite theme: charcoal, silver, and warm neutral grays. System light/dark mode controls its solid background, card, controls, and waveform. The default layout uses the selected 733.7px card width, 441.1px minimum height, 32.4px song padding, 12px play-to-waveform gap, 21px corners, 2px border, and system sans-serif typography with Roboto Mono timestamps. Theme defaults live in `worker/player-theme.json`; the theme CSS is generated in `worker/player-theme.ts`.
 
 Space toggles playback even when the waveform, volume, play button, or version picker is focused. The waveform has no focus outline; arrow-key seeking still works. The local waveform also accepts Space without intercepting its arrow keys.
 
 The one-time UI editor has been removed. Its complete implementation remains in Git history at commit `3fbbfcf` (`server/ui-editor.ts` and `server/ui-editor/`). There is no editor route or Settings entry in the current app.
 
-The local Music Browser uses the same iridescent light/dark palette, layered page background, gradient panel borders, and player controls. It follows system appearance automatically, including changes while the app is open. The local theme lives in `src/styles.css`; keep its palette and gradient surfaces aligned with `worker/player-theme.json` and `worker/player-theme.ts` when changing the shared look.
+The local Music Browser uses the same Graphite light/dark palette, solid page background, subtle panel borders, and neutral player controls. It follows system appearance automatically, including changes while the app is open. The local theme lives in `src/styles.css`; keep its palette aligned with `worker/player-theme.json` and `worker/player-theme.ts` when changing the shared look.

@@ -51,24 +51,9 @@ export function validateTheme(value: unknown): PlayerTheme {
   return theme;
 }
 
-// Iridescent surfaces inspired by Trilly's pink/violet/aqua/gold palette and Balance's layered backgrounds.
-function iridescence(mode: "light" | "dark"): string {
-  return mode === "light" ? `
---pageGradient:radial-gradient(circle at 12% 18%,rgb(242 76 159 / .13),transparent 34%),radial-gradient(circle at 88% 16%,rgb(57 197 214 / .14),transparent 32%),radial-gradient(circle at 76% 88%,rgb(240 162 62 / .13),transparent 36%),linear-gradient(145deg,#f8f3fb,#f2f8fa 52%,#faf6ef);
---rimGradient:linear-gradient(135deg,#e6a7cf,#c7b1e9 32%,#a4d9da 65%,#ecd0a4);
---footerGradient:linear-gradient(112deg,#f8edf6,#efedf9 34%,#eaf7f5 68%,#fcf3e5);
---playGradient:linear-gradient(135deg,#a13c91,#7256b7 48%,#2f7f8a);
---shadowRGB:74 42 100` : `
---pageGradient:radial-gradient(circle at 12% 18%,rgb(240 71 164 / .15),transparent 34%),radial-gradient(circle at 88% 16%,rgb(51 198 218 / .14),transparent 32%),radial-gradient(circle at 76% 88%,rgb(246 170 66 / .11),transparent 36%),linear-gradient(145deg,#15101b,#10191e 52%,#1c1710);
---rimGradient:linear-gradient(135deg,#805374,#66557f 32%,#426f74 65%,#806747);
---footerGradient:linear-gradient(112deg,#2a1e2a,#242237 34%,#1b3032 68%,#322a20);
---playGradient:linear-gradient(135deg,#ef77bc,#aa8bea 48%,#58c3c5);
---shadowRGB:0 0 0`;
-}
-
 export function themeCSS(theme: PlayerTheme = defaultTheme): string {
   validateTheme(theme);
-  const palette = (mode: "light" | "dark") => Object.keys(colorControls).map(key => `--${key}:${theme[mode][key as keyof typeof colorControls]}`).join(";") + ";" + iridescence(mode);
+  const palette = (mode: "light" | "dark") => Object.keys(colorControls).map(key => `--${key}:${theme[mode][key as keyof typeof colorControls]}`).join(";");
   const sizes = Object.keys(layoutControls).map(key => `--${key}:${theme.layout[key as keyof PlayerTheme["layout"]]}${["titleWeight", "eyebrowSpacing", "shadow"].includes(key) ? "" : "px"}`).join(";");
   return `:root{color-scheme:light dark;${palette("light")};${sizes};--font:${fontOptions[theme.font as keyof typeof fontOptions]};--timeFont:${fontOptions[theme.timeFont as keyof typeof fontOptions]};--line-strong:var(--wave);--wave-preview:var(--wavePreview)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){${palette("dark")}}}
