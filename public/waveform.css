@@ -1,6 +1,6 @@
 .waveform { position: relative; min-width: 0; height: 36px; border-radius: 4px; }
 .waveform svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 .waveform input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; touch-action: none; cursor: pointer; }
-.waveform:focus-within { outline: 2px solid var(--accent, #2f6df6); outline-offset: 3px; }
+.waveform:focus-within, .waveform input:focus-visible { outline: none; }
 .waveform:has(input:disabled) { opacity: .45; }
 .waveform input:disabled { cursor: default; }

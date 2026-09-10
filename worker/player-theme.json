@@ -1,0 +1,30 @@
+{
+  "light": {
+    "background": "#e8edf4", "card": "#f5f8fc", "footer": "#f8fafd",
+    "text": "#13202f", "muted": "#6b7b8f", "time": "#8090a4",
+    "accent": "#2f6df6", "accentSoft": "#dbe6ff", "border": "#d2dbe6",
+    "cardBorder": "#ffffff", "wave": "#b9c6d6", "wavePreview": "#8090a4",
+    "play": "#13202f", "playIcon": "#ffffff", "error": "#c9322b"
+  },
+  "dark": {
+    "background": "#10151d", "card": "#1a2330", "footer": "#151e29",
+    "text": "#eaf0f8", "muted": "#a4b2c5", "time": "#9cacc1",
+    "accent": "#82aaff", "accentSoft": "#263b60", "border": "#344255",
+    "cardBorder": "#344255", "wave": "#53647b", "wavePreview": "#a4b2c5",
+    "play": "#eaf0f8", "playIcon": "#13202f", "error": "#ff918a"
+  },
+  "layout": {
+    "cardWidth": 600, "cardHeight": 420, "radius": 24, "pagePadding": 24,
+    "songPadding": 48, "footerPadding": 24, "playSize": 48, "waveHeight": 36,
+    "timelineGap": 10, "controlGap": 16, "borderWidth": 1, "shadow": 7,
+    "titleSize": 38, "titleWeight": 600, "bodySize": 13, "timeSize": 10,
+    "eyebrowSize": 11, "eyebrowSpacing": 0.16, "versionSpacing": 28
+  },
+  "font": "avenir",
+  "timeFont": "mono",
+  "eyebrow": "JONAH SHARED WITH YOU",
+  "showEyebrow": true,
+  "showVersion": true,
+  "showDates": true,
+  "showVolume": true
+}

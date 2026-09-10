@@ -89,11 +89,13 @@
 
   function handlePlaybackKeydown(event: KeyboardEvent): void {
     if (document.querySelector("dialog[open]")) return;
-    if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable=true]")) return;
+    if (event.target instanceof Element && event.target.closest('textarea, select, [contenteditable=true], input:not([type="range"])')) return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.isComposing || event.repeat) return;
     if (event.code === "Space") {
       event.preventDefault();
       togglePlay();
+    } else if (event.target instanceof HTMLInputElement && event.target.type === "range") {
+      return;
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
       if ($player.currentIndex > 0) moveQueue(-1);
