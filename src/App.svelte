@@ -462,7 +462,7 @@
       <span>Music Browser</span>
     </a>
       <button class:active={settingsOpen} class="settings-button" type="button" aria-expanded={settingsOpen} on:click={() => (settingsOpen = !settingsOpen)}>
-        <svg class="icon-gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.2h12.4M1.8 10.8h12.4" /><circle cx="5.6" cy="5.2" r="1.9" /><circle cx="10.4" cy="10.8" r="1.9" /></svg>
+        <svg class="icon-gear" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 2h5l.5 2.5 2 1.2 2.4-.8 2.5 4.2-1.9 1.7v2.4l1.9 1.7-2.5 4.2-2.4-.8-2 1.2-.5 2.5h-5L9 19.5l-2-1.2-2.4.8-2.5-4.2L4 13.2v-2.4L2.1 9.1l2.5-4.2 2.4.8 2-1.2L9.5 2ZM15.5 12a3.5 3.5 0 1 0-7 0 3.5 3.5 0 0 0 7 0Z" /></svg>
         SETTINGS
       </button>
   </header>

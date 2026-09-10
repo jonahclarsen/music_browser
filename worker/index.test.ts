@@ -65,7 +65,11 @@ describe("sharing worker", () => {
     expect(html).toContain('aria-label="Play"');
     expect(html).toContain('<footer aria-label="Song player">');
     expect(html).toContain("Latest version");
-    expect(html).toContain('src="/player.js"');
+    expect(html).toContain('src="/player.js" type="module"');
+    expect(html).toContain('/fonts/roboto-mono-latin-400-normal.woff2');
+    expect(html).toContain('href="/waveform.css"');
+    expect(page.headers.get("Content-Security-Policy")).toContain("connect-src 'self'");
+    expect(page.headers.get("Content-Security-Policy")).toContain("font-src 'self'");
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain('datetime="2026-09-10T00:00:00.000Z"');

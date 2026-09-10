@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { mountWaveform } from "../../public/waveform.js";
+  import "../../public/waveform.css";
   import { onMount } from "svelte";
   import { moveQueue, player, preview, removeQueueItem, selectQueueIndex, setPlaying, setPosition, togglePlaylist } from "../lib/player";
   import type { PlayerTrack } from "../lib/types";
@@ -12,6 +14,7 @@
   const DEFAULT_VOLUME = 0.72;
 
   let audio: HTMLAudioElement;
+  let seekInput: HTMLInputElement;
   let previewAudio: HTMLAudioElement;
   let audioContext: AudioContext | null = null;
   let volumeGain: GainNode | null = null;
@@ -86,6 +89,7 @@
 
   function handlePlaybackKeydown(event: KeyboardEvent): void {
     if (document.querySelector("dialog[open]")) return;
+    if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable=true]")) return;
     if (event.metaKey || event.ctrlKey || event.altKey || event.isComposing || event.repeat) return;
     if (event.code === "Space") {
       event.preventDefault();
@@ -176,6 +180,7 @@
   }
 
   onMount(() => {
+    const destroyWaveform = mountWaveform(seekInput, audio);
     volume = readSavedVolume();
     if (volumeGain) volumeGain.gain.value = volume;
     const resume = () => {
@@ -185,6 +190,7 @@
     window.addEventListener("pointerdown", resume);
     window.addEventListener("keydown", handlePlaybackKeydown, { capture: true });
     return () => {
+      destroyWaveform();
       window.removeEventListener("pointerdown", resume);
       window.removeEventListener("keydown", handlePlaybackKeydown, { capture: true });
       void audioContext?.close();
@@ -248,7 +254,7 @@
       </button>
       <button type="button" disabled={$player.currentIndex < 0 || $player.currentIndex >= $player.queue.length - 1} on:click={() => moveQueue(1)} aria-label="Next track"><svg class="icon-skip" viewBox="0 0 16 16" aria-hidden="true"><path d="M11 2.5v11M3 3l5.5 5L3 13" /></svg></button>
     </div>
-    <div class="timeline"><span>{formatTime(elapsed)}</span><input aria-label="Seek" type="range" min="0" max={duration || 0} step="0.1" value={elapsed} on:input={seek} /><span>{formatTime(duration)}</span></div>
+    <div class="timeline"><span>{formatTime(elapsed)}</span><input bind:this={seekInput} disabled={!Number.isFinite(duration) || duration <= 0} aria-label="Seek" type="range" min="0" max={Number.isFinite(duration) ? duration : 0} step="0.1" value={elapsed} on:input={seek} /><span>{formatTime(duration)}</span></div>
   </div>
 
   <div class="player-tools">

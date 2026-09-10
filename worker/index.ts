@@ -2,14 +2,14 @@ import { playerPage, playerScript } from "./player-page";
 import { filenameSignature, type SharedLinksPage, type SharedLink } from "../src/lib/sharing";
 import type { R2Bucket } from "@cloudflare/workers-types";
 
-export interface Env { SONGS: R2Bucket; UPLOAD_TOKEN: string }
+export interface Env { ASSETS: { fetch(request: Request): Promise<Response> }; SONGS: R2Bucket; UPLOAD_TOKEN: string }
 export const MAX_BYTES = 95 * 1024 * 1024;
 const securityHeaders = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
   "Cache-Control": "no-store",
-  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; media-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+  "Content-Security-Policy": "default-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; script-src 'self'; media-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
 };
 function reply(body: string, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(body, { status, headers: { ...securityHeaders, ...headers } });
@@ -108,6 +108,7 @@ export default {
   },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if (["/waveform.js", "/waveform.css", "/fonts/roboto-mono-latin-400-normal.woff2"].includes(url.pathname) && ["GET", "HEAD"].includes(request.method)) return env.ASSETS.fetch(request);
     if (url.pathname === "/player.js" && ["GET", "HEAD"].includes(request.method)) return reply(request.method === "HEAD" ? "" : playerScript, 200, { "Content-Type": "text/javascript; charset=utf-8" });
     if (url.pathname.startsWith("/api/")) {
       if (!env.UPLOAD_TOKEN || request.headers.get("Authorization") !== `Bearer ${env.UPLOAD_TOKEN}`) return json({ error: "Unauthorized" }, 401);

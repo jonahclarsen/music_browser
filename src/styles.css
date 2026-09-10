@@ -59,7 +59,7 @@ main { width: min(1720px, calc(100% - 44px)); height: calc(100% - 108px); margin
 .brand { color: var(--ink); text-decoration: none; font: 600 22px/1 "Avenir Next", system-ui, sans-serif; letter-spacing: -.025em; white-space: nowrap; }
 .settings-button { min-height: 38px; display: flex; align-items: center; gap: 9px; padding: 8px 13px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--panel-translucent); color: var(--text); cursor: pointer; font: 500 11px var(--font-mono); letter-spacing: .1em; }
 .settings-button:hover, .settings-button.active { color: var(--accent); border-color: var(--accent); background: var(--panel-up); }
-.icon-gear { width: 16px; height: 16px; flex: 0 0 auto; fill: var(--panel); stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; }
+.icon-gear { display: block; width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
 .hero { flex: 1; min-height: 0; overflow: auto; padding: 52px 2vw 60px; }
 .hero .setup-panel { max-width: 980px; margin: auto; }
@@ -264,7 +264,7 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
 }
 
 @media (max-width: 600px) {
-  main { height: calc(100% - 112px); width: calc(100% - 18px); }
+  main { height: calc(100% - 132px); width: calc(100% - 18px); }
   .site-header { flex-basis: 58px; }
   .settings-panel { max-height: calc(100vh - 190px); }
   .directory-row { grid-template-columns: 1fr 46px; margin-inline: 13px; }
@@ -283,7 +283,7 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
   .versions { padding-inline: 10px; }
   .version-row { grid-template-columns: 55px 1fr; padding: 8px 0; }
   .version-row time, .latest-badge { display: none; }
-  .player-dock { height: 112px; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; padding: 8px 12px 24px; }
+  .player-dock { height: 132px; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; padding: 8px 12px 44px; }
   .now-playing { padding: 0; gap: 8px; }
   .album-mark { width: 36px; height: 36px; }
   .now-playing-copy time { display: none; }
@@ -291,7 +291,7 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
   .timeline { position: absolute; left: 12px; right: 12px; bottom: 9px; width: auto; }
   .transport-buttons { gap: 4px; }
   .transport-buttons > button:first-child, .transport-buttons > button:last-child { display: none; }
-  .queue-panel { right: 9px; bottom: 111px; width: calc(100vw - 18px); }
+  .queue-panel { right: 9px; bottom: 131px; width: calc(100vw - 18px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
