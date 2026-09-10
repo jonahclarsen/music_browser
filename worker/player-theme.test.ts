@@ -7,7 +7,7 @@ describe("shared player themes", () => {
     const theme = validateTheme(JSON.parse(JSON.stringify(defaultTheme)));
     const css = themeCSS(theme);
     expect(css).toContain("@media(prefers-color-scheme:dark)");
-    expect(css).toContain('--background:#10151d');
+    expect(css).toContain('--background:#10191e');
     expect(css).toContain(':root[data-theme="light"]');
     expect(css).toContain(':root[data-theme="dark"]');
   });
