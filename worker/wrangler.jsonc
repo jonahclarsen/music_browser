@@ -6,5 +6,6 @@
   "account_id": "2817f1011a1407e7889b6fb3ca98f377",
   "workers_dev": true,
   "r2_buckets": [{ "binding": "SONGS", "bucket_name": "music-browser-shares" }],
+  "triggers": { "crons": ["0 * * * *"] },
   "observability": { "enabled": false }
 }

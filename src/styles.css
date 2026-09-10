@@ -56,7 +56,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
 main { width: min(1720px, calc(100% - 44px)); height: calc(100% - 108px); margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; }
 .site-header { flex: 0 0 64px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
-.brand { color: var(--ink); text-decoration: none; font: 700 12px/1 var(--font-mono); letter-spacing: .08em; white-space: nowrap; }
+.brand { color: var(--ink); text-decoration: none; font: 600 22px/1 "Avenir Next", system-ui, sans-serif; letter-spacing: -.025em; white-space: nowrap; }
 .settings-button { min-height: 38px; display: flex; align-items: center; gap: 9px; padding: 8px 13px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--panel-translucent); color: var(--text); cursor: pointer; font: 500 11px var(--font-mono); letter-spacing: .1em; }
 .settings-button:hover, .settings-button.active { color: var(--accent); border-color: var(--accent); background: var(--panel-up); }
 .icon-gear { width: 16px; height: 16px; flex: 0 0 auto; fill: var(--panel); stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; }
@@ -301,7 +301,42 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
 .icon-share { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .share-notice { position: fixed; z-index: 60; bottom: 112px; right: 24px; width: min(480px, calc(100vw - 48px)); display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--panel-raised); box-shadow: var(--shadow-pop); }
 .share-notice > span { flex: 1 1 100%; padding-right: 24px; font-size: 14px; }
-.share-notice input { flex: 1; min-width: 0; padding: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: var(--radius-sm); }
 .share-notice button { display: flex; align-items: center; justify-content: center; padding: 9px; border: 0; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--ink); cursor: pointer; }
 .share-notice .dismiss-share { position: absolute; top: 10px; right: 10px; padding: 5px; background: transparent; }
 .dismiss-share svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+
+.share-notice a { color: var(--accent); text-underline-offset: 3px; }
+.share-progress-label { display: flex; justify-content: space-between; gap: 20px; width: 100%; font-size: 14px; }
+.share-notice progress { width: 100%; height: 6px; border: 0; border-radius: 5px; overflow: hidden; background: var(--line); accent-color: var(--accent); }
+.share-notice progress::-webkit-progress-bar { background: var(--line); }
+.share-notice progress::-webkit-progress-value { background: var(--accent); }
+.app-tabs { display: flex; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.app-tabs button { border: 0; border-radius: 8px; padding: 8px 16px; background: transparent; color: var(--muted); cursor: pointer; }
+.app-tabs button.active { background: var(--accent-soft); color: var(--accent); }
+.shared-links { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 24px 0; }
+.shared-links-header { display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-bottom: 20px; }
+.shared-links h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; }
+.shared-links-header p, .shared-empty { margin: 0; color: var(--muted); }
+.shared-links button, .shared-links select { padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--panel-raised); cursor: pointer; }
+.shared-links button:disabled, .shared-links select:disabled { opacity: .5; cursor: default; }
+.shared-list { overflow: auto; min-height: 0; display: grid; gap: 14px; }
+.shared-card { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding: 22px; background: var(--row); border: 1px solid var(--line); border-radius: var(--radius); }
+.shared-copy { min-width: 0; }
+.shared-copy h2 { margin: 0 0 8px; font-size: 20px; font-weight: 600; }
+.shared-copy h2 a { color: var(--ink); text-decoration: none; }
+.shared-copy p { font-size: 13px; color: var(--muted); margin: 8px 0; }
+.shared-copy p span { margin-left: 14px; }
+.shared-address { color: var(--accent); font-size: 13px; overflow-wrap: anywhere; }
+.shared-copy details { margin-top: 14px; font-size: 13px; color: var(--text); }
+.shared-copy summary { cursor: pointer; }
+.shared-copy li { margin: 6px 0; overflow-wrap: anywhere; }
+.shared-actions { display: flex; align-items: stretch; flex-direction: column; gap: 9px; flex-shrink: 0; width: 190px; }
+.shared-actions label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+.shared-actions select { width: 100%; color: var(--ink); }
+.shared-actions p { font-size: 13px; margin: 3px 0; }
+.shared-links .delete-share, .shared-error { color: var(--danger); }
+@media (max-width: 600px) {
+  .brand { font-size: 21px; }
+  .shared-card { flex-direction: column; padding: 16px; }
+  .shared-actions { width: 100%; }
+}

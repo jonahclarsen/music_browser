@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { folderRegistry, listParentFolders, mediaRegistry, scanLibrary } from "./library.js";
 
-import { shareSong } from "./sharing.js";
+import { shareSong, listSharedSongs, manageSharedSong } from "./sharing.js";
 
 const runFile = promisify(execFile);
 const app = express();
@@ -18,19 +18,49 @@ app.use(express.json({ limit: "32kb" }));
 
 app.get("/api/health", (_request, response) => response.json({ ok: true }));
 
-// Sharing sends data off-device: require an explicit same-origin JSON request.
-app.post("/api/share", async (request, response, next) => {
+// Share uploads and management are available only to the local app, including reads.
+function requireLocalSharing(request: express.Request, response: express.Response, next: express.NextFunction): void {
   const origin = request.headers.origin;
   if ((origin && origin !== `${request.protocol}://${request.headers.host}`)
       || (request.headers["sec-fetch-site"] && request.headers["sec-fetch-site"] !== "same-origin")
-      || !request.is("application/json")
+      || (request.method !== "GET" && !request.is("application/json"))
       || !["localhost", "127.0.0.1", "[::1]"].includes(request.hostname)) {
     response.status(403).json({ error: "Sharing must be started from Music Browser." });
     return;
   }
+  response.setHeader("Cache-Control", "no-store");
+  next();
+}
+app.post("/api/share", requireLocalSharing, async (request, response, next) => {
+  const streaming = request.headers.accept === "application/x-ndjson";
+  const send = (event: unknown) => { if (!response.destroyed) response.write(`${JSON.stringify(event)}\n`); };
+  if (streaming) {
+    response.setHeader("Content-Type", "application/x-ndjson");
+    response.setHeader("X-Accel-Buffering", "no");
+    response.flushHeaders();
+  }
   try {
-    response.json(await shareSong(String(request.body?.id ?? "")));
-  } catch (error) { next(error); }
+    const result = await shareSong(String(request.body?.id ?? ""), progress => {
+      if (streaming) send({ type: "progress", ...progress });
+    });
+    if (streaming) { send({ type: "complete", ...result }); response.end(); }
+    else response.json(result);
+  } catch (error) {
+    if (streaming) { send({ type: "error", error: error instanceof Error ? error.message : "Sharing failed." }); response.end(); }
+    else next(error);
+  }
+});
+app.get("/api/shares", requireLocalSharing, async (request, response, next) => {
+  try { response.json(await listSharedSongs(typeof request.query.cursor === "string" ? request.query.cursor : undefined)); }
+  catch (error) { next(error); }
+});
+app.delete("/api/shares/:id", requireLocalSharing, async (request, response, next) => {
+  try { await manageSharedSong(String(request.params.id), "revoke"); response.json({ ok: true }); }
+  catch (error) { next(error); }
+});
+app.patch("/api/shares/:id", requireLocalSharing, async (request, response, next) => {
+  try { await manageSharedSong(String(request.params.id), "expiry", request.body?.expiresAt); response.json({ ok: true }); }
+  catch (error) { next(error); }
 });
 
 app.post("/api/pick-directory", async (_request, response, next) => {

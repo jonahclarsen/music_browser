@@ -33,7 +33,7 @@
 <svelte:window on:click={onclose} on:blur={onclose} on:keydown={(event) => event.key === "Escape" && onclose()} />
 
 <div class="context-menu" role="menu" tabindex="-1" style:left="{left}px" style:top="{top}px">
-  <button type="button" role="menuitem" disabled={sharing} on:click={() => (onshare(track), onclose())}>{sharing ? "Uploading…" : "Share song"}</button>
+  <button type="button" role="menuitem" disabled={sharing} on:click={() => (onshare(track), onclose())}>{sharing ? "Uploading" : "Share song"}</button>
   <button type="button" role="menuitem" on:click={reveal}>Open in Finder</button>
   {#if showQueueActions}
     <button type="button" role="menuitem" on:click={() => (onnext(track), onclose())}>Play Next</button>

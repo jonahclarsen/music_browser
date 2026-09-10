@@ -3,6 +3,9 @@
   import { get } from "svelte/store";
   import ContextMenu from "./components/ContextMenu.svelte";
   import PlayerDock from "./components/PlayerDock.svelte";
+  import SharedLinks from "./components/SharedLinks.svelte";
+  import { uploadTrack } from "./lib/share-client";
+  import type { ShareProgress } from "./lib/sharing";
   import SongCard from "./components/SongCard.svelte";
   import { makeTrack, player, playLater, playNext, playQueue, restorePlayer, startPreview, stopPreview } from "./lib/player";
   import type { PlayerState } from "./lib/player";
@@ -60,26 +63,41 @@
   let sharing = false;
   let shareMessage = "";
   let sharedUrl = "";
+  let sharedLinksRevision = 0;
+  let activeTab: "library" | "shares" = "library";
+  let shareProgress: ShareProgress = { phase: "checking", bytes: 0, total: 0, version: 0, versions: 0 };
+  $: sharePercent = shareProgress.total ? Math.min(99, Math.floor(shareProgress.bytes / shareProgress.total * 100)) : 0;
+
+  function selectTab(tab: "library" | "shares"): void {
+    activeTab = tab;
+    settingsOpen = false;
+    try { localStorage.setItem("music-browser-tab", tab); } catch { /* Tabs still work without storage. */ }
+  }
 
   function toggleExpanded(songId: string): void {
     expandedSongId = expandedSongId === songId ? "" : songId;
     writeSession();
   }
 
-  async function copySharedLink(): Promise<void> {
+  async function copySharedLink(url: string): Promise<void> {
+    sharedUrl = url;
     try {
-      await navigator.clipboard.writeText(sharedUrl);
-      shareMessage = "Link copied to clipboard.";
-    } catch { shareMessage = "Select and copy the link below."; }
+      await navigator.clipboard.writeText(url);
+      shareMessage = "copied to clipboard!";
+    } catch { shareMessage = "ready to open! Copy its address from the link menu."; }
   }
 
   async function share(track: PlayerTrack): Promise<void> {
     if (sharing) return;
     sharing = true;
     sharedUrl = "";
-    shareMessage = `Uploading all versions of ${track.songName}…`;
-    const upload = api<{ url: string }>("/api/share", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: track.id }),
+    shareProgress = { phase: "checking", bytes: 0, total: 0, version: 0, versions: 0 };
+    shareMessage = "Checking existing links";
+    const upload = uploadTrack(track.id, progress => {
+      shareProgress = progress;
+      shareMessage = progress.phase === "checking" ? "Checking existing links"
+        : progress.phase === "publishing" ? "Finishing upload"
+        : `Uploading version ${progress.version} of ${progress.versions}`;
     });
     // Begin clipboard access during the click, including browsers that require user activation.
     let copying: Promise<boolean> | undefined;
@@ -92,11 +110,12 @@
     }
     try {
       sharedUrl = (await upload).url;
+      sharedLinksRevision += 1;
       let copied = copying ? await copying : false;
       if (!copied) {
         try { await navigator.clipboard.writeText(sharedUrl); copied = true; } catch { /* Keep the link visible. */ }
       }
-      shareMessage = copied ? "Link copied to clipboard." : "Your song is shared. Copy the link below.";
+      shareMessage = copied ? "copied to clipboard!" : "ready to open! Copy its address from the link menu.";
     } catch (cause) {
       shareMessage = "";
       flashError(cause instanceof Error ? cause.message : "Could not share this song.");
@@ -276,7 +295,7 @@
   async function locateSong(folderId: string): Promise<void> {
     const song = library?.songs.find((item) => item.folderId === folderId);
     if (!song) return;
-    settingsOpen = false;
+    selectTab("library");
     search = "";
     if (!visibleFolders.has(song.parentFolder)) {
       visibleFolders = new Set(visibleFolders).add(song.parentFolder);
@@ -374,8 +393,10 @@
         const restoredTrack = get(player).current;
         if (saved.player.isPlaying && restoredTrack) {
           const restoredExpansion = expandedSongId;
+          const restoredTab = activeTab;
           await locateSong(restoredTrack.folderId);
           expandedSongId = restoredExpansion;
+          selectTab(restoredTab);
         }
       }
     }
@@ -386,6 +407,7 @@
   onMount(() => {
     document.documentElement.dataset.theme = "frost";
     favoriteSongIds = readFavorites();
+    try { activeTab = localStorage.getItem("music-browser-tab") === "shares" ? "shares" : "library"; } catch { /* Use Library by default. */ }
     const unsubscribe = player.subscribe(scheduleSessionWrite);
     const persistNow = () => writeSession();
     window.addEventListener("pagehide", persistNow);
@@ -443,15 +465,19 @@
 <main class:has-library={Boolean(library)}>
   <header class="site-header">
     <a class="brand" href="/" aria-label="Music Browser home">
-      <span>MUSIC BROWSER</span>
+      <span>Music Browser</span>
     </a>
-    {#if library}
+    {#if library && activeTab === "library"}
       <button class:active={settingsOpen} class="settings-button" type="button" aria-expanded={settingsOpen} on:click={() => (settingsOpen = !settingsOpen)}>
         <svg class="icon-gear" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 5.2h12.4M1.8 10.8h12.4" /><circle cx="5.6" cy="5.2" r="1.9" /><circle cx="10.4" cy="10.8" r="1.9" /></svg>
         SETTINGS
       </button>
     {/if}
   </header>
+  <nav class="app-tabs" aria-label="Browser sections">
+    <button type="button" class:active={activeTab === "library"} aria-pressed={activeTab === "library"} on:click={() => selectTab("library")}>Library</button>
+    <button type="button" class:active={activeTab === "shares"} aria-pressed={activeTab === "shares"} on:click={() => selectTab("shares")}>Shared links</button>
+  </nav>
 
   {#if library}
     <div class:open={settingsOpen} class="settings-drawer" aria-hidden={!settingsOpen}>
@@ -469,11 +495,13 @@
     </div>
   {/if}
 
-  {#if !library}<section class="hero">{@render directorySettings()}</section>{/if}
+  {#if !library && activeTab === "library"}<section class="hero">{@render directorySettings()}</section>{/if}
 
   {#if error}<div class="message error-message" role="alert"><span>!</span>{error}<button type="button" on:click={() => (error = "")}>×</button></div>{/if}
 
-  {#if library}
+  {#if activeTab === "shares"}{#key sharedLinksRevision}<SharedLinks oncopy={copySharedLink} />{/key}{/if}
+
+  {#if library && activeTab === "library"}
     <section class="library-section" aria-label="Song library">
       <div class="list-tools">
         <label class="search-box">
@@ -554,10 +582,11 @@
 
 {#if shareMessage}
   <div class="share-notice" role="status" aria-live="polite">
-    <span>{shareMessage}</span>
-    {#if sharedUrl}
-      <input aria-label="Shared song link" readonly value={sharedUrl} on:focus={(event) => event.currentTarget.select()} />
-      <button type="button" on:click={copySharedLink}>Copy link</button>
+    {#if sharing}
+      <div class="share-progress-label"><span>{shareMessage}</span><span>{sharePercent}%</span></div>
+      <progress max="100" value={sharePercent} aria-label="Song upload progress"></progress>
+    {:else}
+      <span><a href={sharedUrl} target="_blank" rel="noreferrer">Link</a> {shareMessage}</span>
     {/if}
     {#if !sharing}<button class="dismiss-share" type="button" aria-label="Dismiss share notification" on:click={() => (shareMessage = "")}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" /></svg></button>{/if}
   </div>

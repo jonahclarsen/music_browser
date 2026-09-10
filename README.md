@@ -71,11 +71,11 @@ The Svelte frontend and Express API are served together on the same local port. 
 
 ## Sharing
 
-Click the SVG share button immediately left of the play queue button, or right-click a song, version, or current player track and choose **Share song**. This uploads **all scanned versions of that song**, publishes one eight-letter, case-insensitive link, and copies it to your clipboard. The link remains visible with a **Copy link** button if browser clipboard permissions prevent automatic copying. Uploads run in the background while local playback continues.
+Click the SVG share button immediately left of the play queue button, or right-click a song, version, or current player track and choose **Share song**. This uploads **all scanned versions of that song**, publishes one eight-letter, case-insensitive link, and copies it to your clipboard. The notification reads **Link copied to clipboard!**, with **Link** opening the shared player. If clipboard access is denied, the same link stays available to open or copy through its context menu. Uploads show byte-based percentage progress while local playback continues.
 
-The standalone page selects the same latest version as Music Browser. Its version picker starts collapsed, and listeners must explicitly choose another version. Playback never advances to another version. Each share is a snapshot; later local edits do not change an existing link. Each version can be up to 95 MiB, with up to 200 versions per share. The scanner's existing MP3-over-WAV preference applies.
+The standalone page selects the same latest version as Music Browser. Its version picker starts collapsed, and listeners must explicitly choose another version. Playback never advances to another version. The complete, sorted combination of filenames identifies an existing share, including shares created before this feature. Matching names reuse that link without uploading any audio; file contents, sizes, title, and local paths are deliberately ignored. Adding, removing, or renaming a version creates a new share. Deleted or expired links are not reused. Each share is a snapshot; later local edits with unchanged filenames do not change its audio. Each version can be up to 95 MiB, with up to 200 versions per share. The scanner's existing MP3-over-WAV preference applies.
 
-The public Worker is `https://music-browser-share.cf-cuicn.workers.dev`, backed by the private `music-browser-shares` R2 bucket. It receives audio files, their basenames, and the selected song title, but no local paths, folder listings, or unrelated songs. Audio is uploaded as-is, including any embedded tags. The Worker makes no requests to localhost; the local Express server remains bound to `127.0.0.1`. There is no public listing endpoint, and pages request no indexing. Anyone with a link can listen, and Cloudflare stores the uploaded copies; links are unlisted, not password protected.
+The public Worker is `https://music-browser-share.cf-cuicn.workers.dev`, backed by the private `music-browser-shares` R2 bucket. It receives audio files, their basenames, and the selected song title, but no local paths, folder listings, or unrelated songs. Audio is uploaded as-is, including any embedded tags. The Worker makes no requests to localhost; the local Express server remains bound to `127.0.0.1`. There is no unauthenticated listing endpoint, and pages request no indexing. Anyone with a link can listen, and Cloudflare stores the uploaded copies; links are unlisted, not password protected.
 
 The server reads credentials from `~/.config/music-browser/sharing.json` (keep permissions `0600`):
 
@@ -96,6 +96,14 @@ pnpm share:deploy
 pnpm --use-node-version=22.19.0 exec wrangler secret put UPLOAD_TOKEN --config worker/wrangler.jsonc
 ```
 
-Uploads are streamed one version at a time into a private draft. The Worker publishes the share only after all files are present. Failed uploads trigger cleanup of draft audio; if connectivity also prevents cleanup, unpublished files can remain in R2. Draft IDs remain reserved to prevent accidental reuse. R2 keys use `drafts/<id>`, `shares/<id>`, and `audio/<id>/<version-index>`. Published shares cannot be modified through the upload API.
+Uploads are streamed one version at a time into a private draft. The Worker publishes the share only after all files are present. Failed uploads trigger cleanup of draft audio; if connectivity also prevents cleanup, unpublished files can remain in R2. Draft IDs remain reserved to prevent accidental reuse. R2 keys use `drafts/<id>`, `shares/<id>`, and `audio/<id>/<version-index>`, plus `deleted/<id>` tombstones. Published audio cannot be modified through the upload API.
 
 Only one song's version history can be expanded at a time. That selection is saved with the existing local session. Clicking the current song in the player reveals and expands it, collapsing the previous song.
+
+### Shared links tab
+
+The local **Shared links** tab lists Cloudflare uploads with song titles, creation dates, sizes, version filenames, and their links. It works without scanning a library. Use **Copy link**, open a link, or **Delete** and then **Delete permanently** to revoke it and remove all uploaded audio. No local files are deleted. **Refresh** updates the list, and **Load more** retrieves additional pages.
+
+Optional expiry can be set to one, seven, or thirty days from now, or removed. Expired links stop serving immediately on subsequent requests; an hourly Worker job removes their audio and retries interrupted deletions. Revoked IDs remain reserved. All listing, matching, deletion, and expiry requests use the server-held credential, and the local endpoints reject cross-origin requests. Cloudflare never connects back to the local app.
+
+The public player says **Jonah shared with you**, uses Avenir Next (with system sans-serif fallback), and keeps older versions behind the collapsed picker. The local Music Browser title uses the same font family.

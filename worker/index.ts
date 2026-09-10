@@ -1,3 +1,4 @@
+import { filenameSignature, type SharedLinksPage, type SharedLink } from "../src/lib/sharing";
 import type { R2Bucket } from "@cloudflare/workers-types";
 
 export interface Env { SONGS: R2Bucket; UPLOAD_TOKEN: string }
@@ -40,14 +41,16 @@ export function parseRange(value: string, size: number): { offset: number; lengt
 }
 export interface SharedSong {
   title: string;
+  createdAt?: string;
+  expiresAt?: string;
   latest: number;
   versions: { label: string; size: number; contentType: "audio/mpeg" | "audio/wav" }[];
 }
 function playerPage(song: SharedSong, id: string, selected: number): string {
-  const older = song.versions.map((version, index) => `<a href="/${id}?version=${index}" ${index === selected ? 'aria-current="true"' : ''}>${escapeHtml(version.label)}${index === song.latest ? " · Latest" : ""}${index === selected ? " · Selected" : ""}</a>`).join("");
+  const older = song.versions.map((version, index) => `<a href="/${id}?version=${index}" ${index === selected ? 'aria-current="true"' : ''}>${escapeHtml(version.label)}${index === selected ? " (selected)" : ""}</a>`).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(song.title)}</title><style>
-  *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px;background:#eef2f5;color:#25313c;font-family:"Avenir Next",system-ui,sans-serif}main{width:min(100%,560px);padding:clamp(24px,6vw,48px);background:#ffffffc9;border:1px solid #fff;border-radius:24px;box-shadow:0 24px 80px #24334112}svg{width:56px;height:56px;padding:14px;background:#e0edf3;border-radius:16px;stroke:#396f86;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}p{font-size:11px;letter-spacing:.16em;color:#6a7d87;margin:28px 0 12px}h1{font-size:clamp(26px,6vw,38px);line-height:1.2;overflow-wrap:anywhere;margin:0 0 12px;font-weight:600}audio{width:100%;display:block;margin-top:24px}footer{margin-top:24px;color:#7b8790;font-size:12px}.version{font-size:13px;overflow-wrap:anywhere;color:#6a7d87}details{margin-top:28px;border-top:1px solid #dce4e9;padding-top:20px}summary{cursor:pointer;font-size:14px}nav{display:grid;gap:6px;margin-top:12px;max-height:280px;overflow:auto}a{color:#396f86;text-decoration:none;padding:10px;border-radius:8px;font-size:14px;overflow-wrap:anywhere}a:hover,a[aria-current]{background:#e0edf3}
-  </style></head><body><main><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg><p>SHARED WITH YOU</p><h1>${escapeHtml(song.title)}</h1><div class="version">${escapeHtml(song.versions[selected].label)}${selected === song.latest ? " · Latest version" : ""}</div><audio controls preload="metadata" src="/${id}/audio/${selected}">Your browser does not support audio playback.</audio>${song.versions.length > 1 ? `<details><summary>Explore all ${song.versions.length} versions</summary><nav aria-label="Song versions">${older}</nav></details>` : ""}<footer>Music Browser</footer></main></body></html>`;
+  *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px;background:#eef2f5;color:#25313c;font-family:"Avenir Next",system-ui,sans-serif}main{width:min(100%,560px);padding:clamp(24px,6vw,48px);background:#ffffffc9;border:1px solid #fff;border-radius:24px;box-shadow:0 24px 80px #24334112}p{font-size:11px;letter-spacing:.16em;color:#6a7d87;margin:0 0 12px}h1{font-size:clamp(26px,6vw,38px);line-height:1.2;overflow-wrap:anywhere;margin:0 0 12px;font-weight:600}audio{width:100%;display:block;margin-top:24px}.version{font-size:13px;overflow-wrap:anywhere;color:#6a7d87}details{margin-top:28px}summary{cursor:pointer;font-size:14px}nav{display:grid;gap:6px;margin-top:12px;max-height:280px;overflow:auto}a{color:#396f86;text-decoration:none;padding:10px;border-radius:8px;font-size:14px;overflow-wrap:anywhere}a:hover,a[aria-current]{background:#e0edf3}
+  </style></head><body><main><p>JONAH SHARED WITH YOU</p><h1>${escapeHtml(song.title)}</h1><div class="version">${escapeHtml(song.versions[selected].label)}</div><audio controls preload="metadata" src="/${id}/audio/${selected}">Your browser does not support audio playback.</audio>${song.versions.length > 1 ? `<details><summary>Explore all ${song.versions.length} versions</summary><nav aria-label="Song versions">${older}</nav></details>` : ""}</main></body></html>`;
 }
 export function validSong(value: unknown): value is SharedSong {
   if (!value || typeof value !== "object") return false;
@@ -58,15 +61,75 @@ export function validSong(value: unknown): value is SharedSong {
     && song.versions.every(v => v && typeof v.label === "string" && v.label.length > 0 && v.label.length <= 300
       && Number.isSafeInteger(v.size) && v.size > 0 && v.size <= MAX_BYTES && ["audio/mpeg", "audio/wav"].includes(v.contentType));
 }
+function isExpired(song: SharedSong): boolean {
+  return Boolean(song.expiresAt && Date.parse(song.expiresAt) <= Date.now());
+}
+async function sharePage(env: Env, origin: string, cursor?: string): Promise<SharedLinksPage> {
+  const listed = await env.SONGS.list({ prefix: "shares/", limit: 25, cursor });
+  const shares: SharedLink[] = [];
+  for (const object of listed.objects) {
+    const manifest = await env.SONGS.get(object.key);
+    if (!manifest) continue;
+    const song = await manifest.json<SharedSong>();
+    const id = object.key.slice(7);
+    if (await env.SONGS.head(`deleted/${id}`)) continue;
+    shares.push({ id, url: `${origin}/${id}`, title: song.title,
+      createdAt: song.createdAt ?? object.uploaded.toISOString(), expiresAt: song.expiresAt,
+      filenames: song.versions.map(v => v.label), bytes: song.versions.reduce((sum, v) => sum + v.size, 0),
+    });
+  }
+  return { shares, cursor: listed.truncated ? listed.cursor : undefined };
+}
+async function findShare(env: Env, origin: string, filenames: string[]): Promise<SharedLink | undefined> {
+  const signature = filenameSignature(filenames);
+  let cursor: string | undefined;
+  do {
+    const page = await sharePage(env, origin, cursor);
+    const found = page.shares.find(share => (!share.expiresAt || Date.parse(share.expiresAt) > Date.now()) && filenameSignature(share.filenames) === signature);
+    if (found) return found;
+    cursor = page.cursor;
+  } while (cursor);
+}
+async function revoke(env: Env, id: string, song: SharedSong): Promise<void> {
+  // Revoke access first, even if an R2 deletion fails. Keep a tombstone to prevent republishing.
+  await env.SONGS.put(`deleted/${id}`, "");
+  await env.SONGS.delete(song.versions.map((_, i) => `audio/${id}/${i}`));
+  await env.SONGS.delete(`shares/${id}`);
+}
 export default {
+  async scheduled(_controller: unknown, env: Env): Promise<void> {
+    let cursor: string | undefined;
+    do {
+      const listed = await env.SONGS.list({ prefix: "shares/", limit: 100, cursor });
+      for (const object of listed.objects) {
+        const manifest = await env.SONGS.get(object.key);
+        if (!manifest) continue;
+        const song = await manifest.json<SharedSong>();
+        if (isExpired(song) || await env.SONGS.head(`deleted/${object.key.slice(7)}`)) await revoke(env, object.key.slice(7), song);
+      }
+      cursor = listed.truncated ? listed.cursor : undefined;
+    } while (cursor);
+  },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) {
       if (!env.UPLOAD_TOKEN || request.headers.get("Authorization") !== `Bearer ${env.UPLOAD_TOKEN}`) return json({ error: "Unauthorized" }, 401);
+      if (url.pathname === "/api/shares" && request.method === "GET") return json(await sharePage(env, url.origin, url.searchParams.get("cursor") ?? undefined));
+      if (url.pathname === "/api/shares/find" && request.method === "POST") {
+        const body = await request.json().catch(() => null) as { filenames?: unknown } | null;
+        const names = body?.filenames;
+        if (!Array.isArray(names) || !names.length || names.length > 200 || !names.every(name => typeof name === "string" && name.length <= 300)) return json({ error: "Invalid filenames." }, 400);
+        const found = await findShare(env, url.origin, names);
+        return json(found ? { id: found.id, url: found.url, reused: true } : {});
+      }
       if (url.pathname === "/api/shares" && request.method === "POST") {
         if (Number(request.headers.get("Content-Length")) > 100_000) return json({ error: "Too much metadata." }, 413);
         const song: unknown = await request.json().catch(() => null);
         if (!validSong(song)) return json({ error: "Invalid song metadata (maximum 200 versions, 95 MiB each)." }, 400);
+        const found = await findShare(env, url.origin, song.versions.map(v => v.label));
+        if (found) return json({ id: found.id, url: found.url, reused: true });
+        delete song.expiresAt;
+        song.createdAt = new Date().toISOString();
         for (let attempt = 0; attempt < 5; attempt++) {
           const id = randomId();
           const stored = await env.SONGS.put(`drafts/${id}`, JSON.stringify(song), { onlyIf: { etagDoesNotMatch: "*" } });
@@ -74,13 +137,28 @@ export default {
         }
         return json({ error: "Could not allocate a link. Try again." }, 503);
       }
-      const route = /^\/api\/shares\/([a-z]{8})(?:\/(publish|audio\/(\d+)))?$/.exec(url.pathname);
+      const route = /^\/api\/shares\/([a-z]{8})(?:\/(publish|revoke|expiry|audio\/(\d+)))?$/.exec(url.pathname);
       if (!route) return json({ error: "Not found" }, 404);
       const id = route[1];
       const draft = await env.SONGS.get(`drafts/${id}`);
       if (!draft) return json({ error: "Upload not found" }, 404);
       const song = await draft.json<SharedSong>();
-      const published = await env.SONGS.head(`shares/${id}`);
+      if (route[2] === "revoke" && request.method === "POST") {
+        await revoke(env, id, song);
+        return json({ ok: true });
+      }
+      if (await env.SONGS.head(`deleted/${id}`)) return json({ error: "This share was deleted." }, 410);
+      const published = await env.SONGS.get(`shares/${id}`);
+      if (route[2] === "expiry" && request.method === "POST") {
+        if (!published) return json({ error: "Share not found." }, 404);
+        const body = await request.json().catch(() => null) as { expiresAt?: unknown } | null;
+        if (!body || !("expiresAt" in body) || (body.expiresAt !== null && (typeof body.expiresAt !== "string" || !Number.isFinite(Date.parse(body.expiresAt)) || Date.parse(body.expiresAt) <= Date.now()))) return json({ error: "Choose a future expiry date or no expiry." }, 400);
+        const current = await published.json<SharedSong>();
+        if (body.expiresAt === null) delete current.expiresAt;
+        else current.expiresAt = new Date(body.expiresAt as string).toISOString();
+        await env.SONGS.put(`shares/${id}`, JSON.stringify(current));
+        return json({ ok: true });
+      }
       if (published) {
         if (route[2] === "publish" && request.method === "POST") return json({ id, url: `${url.origin}/${id}` });
         return json({ error: "This share is already published." }, 409);
@@ -112,8 +190,9 @@ export default {
     if (!match) return reply("This shared song could not be found.", 404);
     const id = match[1].toLowerCase();
     const manifest = await env.SONGS.get(`shares/${id}`);
-    if (!manifest) return reply("This shared song is no longer available.", 404);
+    if (!manifest || await env.SONGS.head(`deleted/${id}`)) return reply("This shared song is no longer available.", 404);
     const song = await manifest.json<SharedSong>();
+    if (isExpired(song)) return reply("This shared song has expired.", 404);
     if (match[2] === undefined) {
       const requested = url.searchParams.has("version") ? Number(url.searchParams.get("version")) : song.latest;
       const selected = Number.isInteger(requested) && requested >= 0 && requested < song.versions.length ? requested : song.latest;
