@@ -400,7 +400,6 @@
   }
 
   onMount(() => {
-    document.documentElement.dataset.theme = "frost";
     favoriteSongIds = readFavorites();
     const unsubscribe = player.subscribe(scheduleSessionWrite);
     const persistNow = () => writeSession();

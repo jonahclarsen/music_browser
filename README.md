@@ -117,3 +117,5 @@ The shared player uses an iridescent pink, violet, aqua, and gold theme inspired
 Space toggles playback even when the waveform, volume, play button, or version picker is focused. The waveform has no focus outline; arrow-key seeking still works. The local waveform also accepts Space without intercepting its arrow keys.
 
 The one-time UI editor has been removed. Its complete implementation remains in Git history at commit `3fbbfcf` (`server/ui-editor.ts` and `server/ui-editor/`). There is no editor route or Settings entry in the current app.
+
+The local Music Browser uses the same iridescent light/dark palette, layered page background, gradient panel borders, and player controls. It follows system appearance automatically, including changes while the app is open. The local theme lives in `src/styles.css`; keep its palette and gradient surfaces aligned with `worker/player-theme.json` and `worker/player-theme.ts` when changing the shared look.
