@@ -296,3 +296,11 @@ input[type="range"] { height: 3px; accent-color: var(--accent); cursor: pointer;
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.icon-share { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.share-notice { position: fixed; z-index: 60; bottom: 112px; right: 24px; width: min(480px, calc(100vw - 48px)); display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--panel-raised); box-shadow: var(--shadow-pop); }
+.share-notice > span { flex: 1 1 100%; padding-right: 24px; font-size: 14px; }
+.share-notice input { flex: 1; min-width: 0; padding: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: var(--radius-sm); }
+.share-notice button { display: flex; align-items: center; justify-content: center; padding: 9px; border: 0; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--ink); cursor: pointer; }
+.share-notice .dismiss-share { position: absolute; top: 10px; right: 10px; padding: 5px; background: transparent; }
+.dismiss-share svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }

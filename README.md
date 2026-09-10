@@ -68,3 +68,34 @@ pnpm build
 ```
 
 The Svelte frontend and Express API are served together on the same local port. The API keeps opaque IDs for scanned files and supports byte ranges for seeking.
+
+## Sharing
+
+Click the SVG share button immediately left of the play queue button, or right-click a song, version, or current player track and choose **Share song**. This uploads **all scanned versions of that song**, publishes one eight-letter, case-insensitive link, and copies it to your clipboard. The link remains visible with a **Copy link** button if browser clipboard permissions prevent automatic copying. Uploads run in the background while local playback continues.
+
+The standalone page selects the same latest version as Music Browser. Its version picker starts collapsed, and listeners must explicitly choose another version. Playback never advances to another version. Each share is a snapshot; later local edits do not change an existing link. Each version can be up to 95 MiB, with up to 200 versions per share. The scanner's existing MP3-over-WAV preference applies.
+
+The public Worker is `https://music-browser-share.cf-cuicn.workers.dev`, backed by the private `music-browser-shares` R2 bucket. It receives audio files, their basenames, and the selected song title, but no local paths, folder listings, or unrelated songs. Audio is uploaded as-is, including any embedded tags. The Worker makes no requests to localhost; the local Express server remains bound to `127.0.0.1`. There is no public listing endpoint, and pages request no indexing. Anyone with a link can listen, and Cloudflare stores the uploaded copies; links are unlisted, not password protected.
+
+The server reads credentials from `~/.config/music-browser/sharing.json` (keep permissions `0600`):
+
+```json
+{
+  "url": "https://music-browser-share.cf-cuicn.workers.dev",
+  "token": "YOUR_PRIVATE_UPLOAD_TOKEN"
+}
+```
+
+Alternatively, set `MUSIC_BROWSER_SHARE_URL` and `MUSIC_BROWSER_SHARE_TOKEN`. Credentials stay on the local server and must never be committed or sent to the browser. The matching Worker secret is named `UPLOAD_TOKEN`.
+
+To deploy to another Cloudflare account, update `worker/wrangler.jsonc`, create its R2 bucket, deploy, set the secret, and configure the local server:
+
+```bash
+pnpm --use-node-version=22.19.0 exec wrangler r2 bucket create music-browser-shares --config worker/wrangler.jsonc
+pnpm share:deploy
+pnpm --use-node-version=22.19.0 exec wrangler secret put UPLOAD_TOKEN --config worker/wrangler.jsonc
+```
+
+Uploads are streamed one version at a time into a private draft. The Worker publishes the share only after all files are present. Failed uploads trigger cleanup of draft audio; if connectivity also prevents cleanup, unpublished files can remain in R2. Draft IDs remain reserved to prevent accidental reuse. R2 keys use `drafts/<id>`, `shares/<id>`, and `audio/<id>/<version-index>`. Published shares cannot be modified through the upload API.
+
+Only one song's version history can be expanded at a time. That selection is saved with the existing local session. Clicking the current song in the player reveals and expands it, collapsing the previous song.

@@ -20,6 +20,7 @@
     directory: string;
     includedFolders: string[];
     visibleFolders?: string[];
+    expandedSongId?: string;
     randomOrder: boolean;
     randomSongIds: string[];
     player: {
@@ -55,6 +56,52 @@
   let highlightedSongId = "";
   let favoriteSongIds = new Set<string>();
   let favoritesOnly = false;
+  let expandedSongId = "";
+  let sharing = false;
+  let shareMessage = "";
+  let sharedUrl = "";
+
+  function toggleExpanded(songId: string): void {
+    expandedSongId = expandedSongId === songId ? "" : songId;
+    writeSession();
+  }
+
+  async function copySharedLink(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(sharedUrl);
+      shareMessage = "Link copied to clipboard.";
+    } catch { shareMessage = "Select and copy the link below."; }
+  }
+
+  async function share(track: PlayerTrack): Promise<void> {
+    if (sharing) return;
+    sharing = true;
+    sharedUrl = "";
+    shareMessage = `Uploading all versions of ${track.songName}…`;
+    const upload = api<{ url: string }>("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: track.id }),
+    });
+    // Begin clipboard access during the click, including browsers that require user activation.
+    let copying: Promise<boolean> | undefined;
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+      try {
+        copying = navigator.clipboard.write([new ClipboardItem({
+          "text/plain": upload.then(({ url }) => new Blob([url], { type: "text/plain" })),
+        })]).then(() => true, () => false);
+      } catch { /* A manual copy action remains available after upload. */ }
+    }
+    try {
+      sharedUrl = (await upload).url;
+      let copied = copying ? await copying : false;
+      if (!copied) {
+        try { await navigator.clipboard.writeText(sharedUrl); copied = true; } catch { /* Keep the link visible. */ }
+      }
+      shareMessage = copied ? "Link copied to clipboard." : "Your song is shared. Copy the link below.";
+    } catch (cause) {
+      shareMessage = "";
+      flashError(cause instanceof Error ? cause.message : "Could not share this song.");
+    } finally { sharing = false; }
+  }
 
   $: orderedSongs = randomOrder && library
     ? randomSongIds.map((id) => library!.songs.find((song) => song.id === id)).filter((song): song is Song => Boolean(song))
@@ -126,6 +173,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ directory, includedFolders: [...selected] }),
       });
+      if (!library.songs.some(song => song.id === expandedSongId)) expandedSongId = "";
       randomOrder = false;
       randomSongIds = [];
       analyzedFolders = [...selected];
@@ -234,6 +282,9 @@
       visibleFolders = new Set(visibleFolders).add(song.parentFolder);
       writeSession();
     }
+    expandedSongId = song.id;
+    favoritesOnly = false;
+    writeSession();
     highlightedSongId = "";
     await tick();
     document.getElementById(`song-${song.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -249,6 +300,7 @@
       directory: library.directory,
       includedFolders: analyzedFolders,
       visibleFolders: [...visibleFolders],
+      expandedSongId,
       randomOrder,
       randomSongIds,
       player: {
@@ -292,6 +344,7 @@
           ? new Set(saved.visibleFolders.filter((name) => availableFolders.has(name)))
           : new Set(analyzedFolders);
         const validSongIds = new Set(library.songs.map(({ id }) => id));
+        expandedSongId = saved.expandedSongId && validSongIds.has(saved.expandedSongId) ? saved.expandedSongId : "";
         const restoredOrder = saved.randomSongIds.filter((id) => validSongIds.has(id));
         const restoredSet = new Set(restoredOrder);
         restoredOrder.push(...library.songs.map(({ id }) => id).filter((id) => !restoredSet.has(id)));
@@ -320,7 +373,9 @@
         );
         const restoredTrack = get(player).current;
         if (saved.player.isPlaying && restoredTrack) {
+          const restoredExpansion = expandedSongId;
           await locateSong(restoredTrack.folderId);
+          expandedSongId = restoredExpansion;
         }
       }
     }
@@ -455,6 +510,8 @@
           {#each filteredSongs as song (song.id)}
             <SongCard
               {song}
+              expanded={expandedSongId === song.id}
+              ontoggleexpanded={toggleExpanded}
               current={$player.current?.folderId === song.folderId}
               playing={$player.current?.folderId === song.folderId && $player.isPlaying}
               highlighted={highlightedSongId === song.id}
@@ -490,10 +547,25 @@
     onnext={playNext}
     onlater={playLater}
     onerror={flashError}
+    onshare={share}
+    {sharing}
   />
 {/if}
 
+{#if shareMessage}
+  <div class="share-notice" role="status" aria-live="polite">
+    <span>{shareMessage}</span>
+    {#if sharedUrl}
+      <input aria-label="Shared song link" readonly value={sharedUrl} on:focus={(event) => event.currentTarget.select()} />
+      <button type="button" on:click={copySharedLink}>Copy link</button>
+    {/if}
+    {#if !sharing}<button class="dismiss-share" type="button" aria-label="Dismiss share notification" on:click={() => (shareMessage = "")}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8" /></svg></button>{/if}
+  </div>
+{/if}
+
 <PlayerDock
+  onshare={share}
+  {sharing}
   onlocate={locateSong}
   oncontext={(event, track, folderId) => showContext(event, track, folderId, false)}
 />

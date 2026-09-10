@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { folderRegistry, listParentFolders, mediaRegistry, scanLibrary } from "./library.js";
 
+import { shareSong } from "./sharing.js";
+
 const runFile = promisify(execFile);
 const app = express();
 const port = Number(process.env.PORT ?? 53038);
@@ -15,6 +17,21 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 app.use(express.json({ limit: "32kb" }));
 
 app.get("/api/health", (_request, response) => response.json({ ok: true }));
+
+// Sharing sends data off-device: require an explicit same-origin JSON request.
+app.post("/api/share", async (request, response, next) => {
+  const origin = request.headers.origin;
+  if ((origin && origin !== `${request.protocol}://${request.headers.host}`)
+      || (request.headers["sec-fetch-site"] && request.headers["sec-fetch-site"] !== "same-origin")
+      || !request.is("application/json")
+      || !["localhost", "127.0.0.1", "[::1]"].includes(request.hostname)) {
+    response.status(403).json({ error: "Sharing must be started from Music Browser." });
+    return;
+  }
+  try {
+    response.json(await shareSong(String(request.body?.id ?? "")));
+  } catch (error) { next(error); }
+});
 
 app.post("/api/pick-directory", async (_request, response, next) => {
   try {

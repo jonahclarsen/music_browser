@@ -3,6 +3,8 @@
   import { moveQueue, player, preview, removeQueueItem, selectQueueIndex, setPlaying, setPosition, togglePlaylist } from "../lib/player";
   import type { PlayerTrack } from "../lib/types";
 
+  export let onshare: (track: PlayerTrack) => void;
+  export let sharing = false;
   export let onlocate: (folderId: string) => void;
   export let oncontext: (event: MouseEvent, track: PlayerTrack, folderId?: string) => void;
 
@@ -249,6 +251,7 @@
   </div>
 
   <div class="player-tools">
+    <button class="share-button" type="button" disabled={!$player.current || sharing} on:click={() => $player.current && onshare($player.current)} aria-label={sharing ? "Uploading song versions" : "Share song"} title={sharing ? "Uploading song versions…" : "Share song with all versions"} aria-busy={sharing}><svg class="icon-share" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8" /></svg></button>
     <button class="queue-button" class:active={$player.playlistVisible} type="button" disabled={!$player.queue.length} on:click={togglePlaylist} aria-label="Show play queue"><svg class="icon-queue" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h13M1.5 8h13M1.5 12h13" /></svg></button>
     <label class="volume-control"><svg class="icon-volume" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 8h3.2L10 4.5v11l-4.3-3.5H2.5z" /><path d="M13 7a4 4 0 0 1 0 6M15.6 4.7a7.1 7.1 0 0 1 0 10.6" /></svg><input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={volume} on:input={changeVolume} /></label>
   </div>

@@ -1,0 +1,10 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "music-browser-share",
+  "main": "index.ts",
+  "compatibility_date": "2026-09-09",
+  "account_id": "2817f1011a1407e7889b6fb3ca98f377",
+  "workers_dev": true,
+  "r2_buckets": [{ "binding": "SONGS", "bucket_name": "music-browser-shares" }],
+  "observability": { "enabled": false }
+}

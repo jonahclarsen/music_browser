@@ -13,7 +13,8 @@
   export let highlighted = false;
   export let favorited = false;
 
-  let expanded = false;
+  export let expanded = false;
+  export let ontoggleexpanded: (songId: string) => void;
 
   function play(event: MouseEvent, version: SongVersion): void {
     event.stopPropagation();
@@ -22,7 +23,7 @@
 
   function toggleExpanded(event: MouseEvent): void {
     event.stopPropagation();
-    expanded = !expanded;
+    ontoggleexpanded(song.id);
   }
 
   function toggleFavorite(event: MouseEvent): void {

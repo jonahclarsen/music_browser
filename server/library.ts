@@ -15,6 +15,7 @@ interface ScanCacheEntry {
 
 const scanCache = new Map<string, ScanCacheEntry>();
 
+export const songRegistry = new Map<string, Song>();
 export const mediaRegistry = new Map<string, string>();
 export const folderRegistry = new Map<string, string>();
 
@@ -151,6 +152,7 @@ export async function scanLibrary(directory: string, includedFolders: string[]):
         latest: versions.find((version) => !isInstrumental(version)) ?? versions[0],
         versions,
       };
+      for (const version of versions) songRegistry.set(version.id, song);
       songs.push(song);
     }
   }
