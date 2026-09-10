@@ -112,7 +112,7 @@ Both players use the shared `public/waveform.js` and `public/waveform.css` seek 
 
 ### Shared player appearance
 
-The shared player uses an iridescent pink, violet, aqua, and gold theme inspired by Trilly and Balance. System light/dark mode controls its layered background, card, controls, and waveform. The default layout uses the selected 667px card width, 401px minimum height, 21px corners, 2px border, and system sans-serif typography with Roboto Mono timestamps. Theme defaults live in `worker/player-theme.json`; the gradient surfaces are defined in `worker/player-theme.ts`.
+The shared player uses an iridescent pink, violet, aqua, and gold theme inspired by Trilly and Balance. System light/dark mode controls its layered background, card, controls, and waveform. The default layout uses the selected 733.7px card width, 441.1px minimum height, 32.4px song padding, 12px play-to-waveform gap, 21px corners, 2px border, and system sans-serif typography with Roboto Mono timestamps. Theme defaults live in `worker/player-theme.json`; the gradient surfaces are defined in `worker/player-theme.ts`.
 
 Space toggles playback even when the waveform, volume, play button, or version picker is focused. The waveform has no focus outline; arrow-key seeking still works. The local waveform also accepts Space without intercepting its arrow keys.
 
