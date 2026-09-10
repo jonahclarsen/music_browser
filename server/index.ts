@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { folderRegistry, listParentFolders, mediaRegistry, scanLibrary } from "./library.js";
 
+import { uiEditorRouter } from "./ui-editor.js";
 import { shareSong, listSharedSongs, manageSharedSong } from "./sharing.js";
 
 const runFile = promisify(execFile);
@@ -15,6 +16,7 @@ const isProduction = process.env.NODE_ENV === "production";
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 app.use(express.json({ limit: "32kb" }));
+app.use("/ui-editor", uiEditorRouter());
 
 app.get("/api/health", (_request, response) => response.json({ ok: true }));
 

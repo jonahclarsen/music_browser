@@ -475,7 +475,7 @@
           </header>
           <div class="settings-content">
             {#if library}{@render directorySettings()}{/if}
-            <div class="settings-sharing"><button class="settings-button" type="button" on:click={() => { sharedLinksOpen = true; sharedLinksDialog.showModal(); }}>Manage shared links</button></div>
+            <div class="settings-sharing"><a class="settings-button" href="/ui-editor" target="_blank" rel="noopener">Customize shared player</a><button class="settings-button" type="button" on:click={() => { sharedLinksOpen = true; sharedLinksDialog.showModal(); }}>Manage shared links</button></div>
           </div>
         </section>
       </div>
