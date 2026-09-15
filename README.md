@@ -75,13 +75,13 @@ Click the SVG share button immediately left of the play queue button, or right-c
 
 The standalone page selects the same latest version as Music Browser. Its version picker starts collapsed, and listeners must explicitly choose another version. Playback never advances to another version. The complete, sorted combination of filenames identifies an existing share, including shares created before this feature. Matching names reuse that link without uploading any audio; file contents, sizes, title, and local paths are deliberately ignored. Adding, removing, or renaming a version creates a new share. Deleted or expired links are not reused. Each share is a snapshot; later local edits with unchanged filenames do not change its audio. Each version can be up to 95 MiB, with up to 200 versions per share. The scanner's existing MP3-over-WAV preference applies.
 
-The public Worker is `https://music-browser-share.cf-cuicn.workers.dev`, backed by the private `music-browser-shares` R2 bucket. It receives audio files, their basenames, and the selected song title, but no local paths, folder listings, or unrelated songs. Audio is uploaded as-is, including any embedded tags. The Worker makes no requests to localhost; the local Express server remains bound to `127.0.0.1`. There is no unauthenticated listing endpoint, and pages request no indexing. Anyone with a link can listen, and Cloudflare stores the uploaded copies; links are unlisted, not password protected.
+The public Worker is `https://share.jonah.art`, backed by the private `music-browser-shares` R2 bucket. It receives audio files, their basenames, and the selected song title, but no local paths, folder listings, or unrelated songs. Audio is uploaded as-is, including any embedded tags. The Worker makes no requests to localhost; the local Express server remains bound to `127.0.0.1`. There is no unauthenticated listing endpoint, and pages request no indexing. Anyone with a link can listen, and Cloudflare stores the uploaded copies; links are unlisted, not password protected.
 
 The server reads credentials from `~/.config/music-browser/sharing.json` (keep permissions `0600`):
 
 ```json
 {
-  "url": "https://music-browser-share.cf-cuicn.workers.dev",
+  "url": "https://share.jonah.art",
   "token": "YOUR_PRIVATE_UPLOAD_TOKEN"
 }
 ```
