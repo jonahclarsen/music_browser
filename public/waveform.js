@@ -37,16 +37,37 @@ export function mountWaveform(input, audio) {
     const n = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
     return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
   };
+  /** @type {SVGLineElement[]} */
+  let lines = [];
+  /** @type {number[] | null} */
+  let drawnPeaks = null;
+  // Rebuild the bars only when the peaks change; playback just recolors them in place.
+  const build = (/** @type {number[]} */ bars) => {
+    drawnPeaks = peaks;
+    lines = bars.map((peak, i) => {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      const x = String(i * 540 / bars.length + 1);
+      const height = Math.max(1, peak * 32);
+      line.setAttribute('x1', x);
+      line.setAttribute('x2', x);
+      line.setAttribute('y1', String(35 - height));
+      line.setAttribute('y2', String(35 + height));
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('stroke-linecap', 'round');
+      return line;
+    });
+    svg.replaceChildren(...lines);
+  };
   const draw = () => {
     const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
     const bars = peaks.length ? peaks : Array(180).fill(0);
-    svg.innerHTML = bars.map((peak, i) => {
+    if (drawnPeaks !== peaks) build(bars);
+    lines.forEach((line, i) => {
       const position = i / bars.length;
       const color = preview !== null && position >= Math.min(progress, preview) && position < Math.max(progress, preview)
         ? 'var(--wave-preview, #8090a4)' : position < progress ? 'var(--accent, #2f6df6)' : 'var(--line-strong, #b9c6d6)';
-      const height = Math.max(1, peak * 32);
-      return '<line x1="' + (i * 540 / bars.length + 1) + '" x2="' + (i * 540 / bars.length + 1) + '" y1="' + (35 - height) + '" y2="' + (35 + height) + '" stroke="' + color + '" stroke-width="2" stroke-linecap="round"/>';
-    }).join('');
+      if (line.getAttribute('stroke') !== color) line.setAttribute('stroke', color);
+    });
     input.setAttribute('aria-valuetext', format(audio.currentTime) + ' / ' + format(audio.duration));
     host.title = preview === null ? '' : format(preview * audio.duration);
   };
